@@ -1,0 +1,54 @@
+@import '~antd/dist/antd.dark.less';
+
+html {
+  --primary: #177ddc;
+}
+
+
+.App {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
+}
+
+header {
+  display: flex;
+  background-color: var(--primary);
+  width: 100%;
+  padding: 8px 16px;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+}
+
+div, a, span, button {
+  font-family: 'Source Sans Pro';
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Oswald';
+}
+
+#router-container {
+  width: 100%;
+  height: 100%;
+}
+
+#router-container div {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
