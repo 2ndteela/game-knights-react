@@ -1,10 +1,17 @@
 import './App.less';
-import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
+import React, {useEffect} from 'react' 
+import {BrowserRouter as Router, Routes, Route, useLocation} from 'react-router-dom'
 import Home from './views/Home'
 import JoinGame from './views/JoinGame';
 import HeSaidSheSaidMain from './views/games/HeSaidSheSaid/HeSaidSheSaidMain';
 
 function App() {
+//    const location = useLocation()
+    
+//    useEffect(() => {
+//        console.log('location', location)
+//    }, [location])
+    
   return (
     <div className="App">
       <header>
