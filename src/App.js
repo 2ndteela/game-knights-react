@@ -1,18 +1,16 @@
 import './App.less';
-import React, {useEffect} from 'react' 
-import {BrowserRouter as Router, Routes, Route, useLocation} from 'react-router-dom'
+import React from 'react' 
+import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import Home from './views/Home'
 import JoinGame from './views/JoinGame';
 import HeSaidSheSaidMain from './views/games/HeSaidSheSaid/HeSaidSheSaidMain';
+import './ultilites/firebase.js'
+import GameContextProvider from './contexts/GameContext';
 
 function App() {
-//    const location = useLocation()
-    
-//    useEffect(() => {
-//        console.log('location', location)
-//    }, [location])
     
   return (
+    <GameContextProvider>
     <div className="App">
       <header>
         <h3>Game Knights</h3>
@@ -28,6 +26,7 @@ function App() {
       </Router>
       </div>
     </div>
+    </GameContextProvider>
   );
 }
 
