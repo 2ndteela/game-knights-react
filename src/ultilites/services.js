@@ -82,7 +82,6 @@ export const setGameFinished = async () => {
 }
 
 // He Said She Said functions
-
 export const removeMeFromLobby = () => {
     const { gameCode, playerId} = getStoredGameData()
     
@@ -104,17 +103,19 @@ export const getNewGameCode = async () => {
     }
 }
 
-export const openLobby = async (code, type, screenName) => {
+export const openLobby = async (code, game, screenName) => {
 
     const gameData = {
         state: 'lobby',
-        type,
+        game,
         players: [
             {
                 name: screenName,
             }
         ]
     }
+
+    if(game === 'ai') gameData.picker = 0
 
     writeToDb(`games/${code}`, gameData)
 }
@@ -130,6 +131,9 @@ export const joinLobby = async (code, player) => {
         if(data) {
             const playerCount = Object.keys(data.players).length
             writeToDb(`games/${code}/players/${playerCount}/name`, player)
+
+            if(data.game === 'ai') writeToDb(`games/${code}/order`, data.order + `-${player}`)
+
             return playerCount
         }
         else return -1
@@ -151,15 +155,34 @@ export const saveHsssResponse = async (response, step) => {
 }
 
 export const checkForEndOfHsssGame = async () => {
-    const {gameCode} = getStoredGameData()
-    const data = await dbReadOnce(`games/${gameCode}/players`)
-    let allDone = true
-    data.forEach(player => {
-        if(player.responses.length < 10)
-            allDone = false
-    })
+    try {
+        const {gameCode} = getStoredGameData()
+        const data = await dbReadOnce(`games/${gameCode}/players`)
+        let allDone = true
+        data.forEach(player => {
+            if(player.responses.length < 10)
+                allDone = false
+        })
 
-    return allDone
+        return allDone
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+export const getHsssGameData = async () => {
+    try {
+        const {gameCode} = getStoredGameData()
+        const data = await dbReadOnce(`games/${gameCode}`)
+        return data
+    }
+    catch(error) {
+        console.error(error)
+        return null
+    }
+
 }
 
 

@@ -2,7 +2,7 @@ import { Button, Input, Radio, Tooltip, message } from "antd";
 import React, {useState, useEffect, useMemo, useCallback} from 'react'
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getNewGameCode, openLobby, startGame, joinLobby, removeGameFromDb, removeMeFromLobby, listenForGameUpdates, removeListener } from "../ultilites/services";
-import { cleanStoredData, getStoredGameData, writeNewGameData } from "../ultilites/utilities";
+import { cleanStoredData, getStoredGameData, writeNewGameData, getGameStates } from "../ultilites/utilities";
 import { ShareAltOutlined } from '@ant-design/icons';
 
 export default function JoinGame() {
@@ -33,24 +33,27 @@ export default function JoinGame() {
 
     useEffect(() => {
         if(gameData) {
+            const game = search.get('game')
+            const gameStates = getGameStates(game) 
 
-            if(gameData.state !== 'lobby') {
+            if(gameData.state === gameStates.started) {
                 removeListener(lobbyListener)
-                navigate(`/${search.get('game')}`)
+                navigate(`/${game}`)
             }
 
-            if(gameData.players?.length)
-                setPeopleInLobby(gameData.players.length)
+            else if(gameData.state === gameStates.ended) cleanStoredData()
+
+            else if(gameData.players?.length) setPeopleInLobby(gameData.players.length)
         }
 
         else {
 
-            if(gameCode && !lobbyListener) 
+            if(code && !lobbyListener) 
                 startListeningForGame()
             else
                 setJoined(false)
         }
-    }, [gameCode, gameData, lobbyListener, navigate, search, startListeningForGame])
+    }, [code, gameData, lobbyListener, navigate, search, startListeningForGame])
 
     useEffect(() => {
         if(host) {
@@ -70,16 +73,14 @@ export default function JoinGame() {
 
     async function joinGame() {
         const game = search.get('game')
+        cleanStoredData()
 
         if(!game) message.warning("What type of game are your joining? Try going back to the home page and selecting your game again")
         else {
             let playerId = 0
-            if(host)
-                openLobby(code, game, screenName)
+            if(host) openLobby(code, game, screenName)
 
-            if(!host) {
-                playerId = await joinLobby(code, screenName)
-            }
+            if(!host) playerId = await joinLobby(code, screenName)
 
             writeNewGameData(code, playerId)
             startListeningForGame()
@@ -89,13 +90,13 @@ export default function JoinGame() {
 
     function copySharableAddress() {
         const game = search.get('game')
-        navigator.clipboard.writeText(`https://gameknights.web.app/join-game?gameCode=${gameCode}&game=${game}`);
+        navigator.clipboard.writeText(`https://gameknights.web.app/join-game?gameCode=${code}&game=${game}`);
         message.info('Address copied to clip board')
     }
 
     function leaveGame() {
         if(host) {
-            removeGameFromDb(gameCode)
+            removeGameFromDb(code)
             setNewCode('')
         }
 
@@ -159,7 +160,7 @@ export default function JoinGame() {
                         </>)
 
                     }
-                    <h2 style={{color: 'var(--primary)'}} >{gameCode}</h2>
+                    <h2 style={{color: 'var(--primary)'}} >{code}</h2>
                     <div>{peopleInLobby} people in Lobby</div>
                     <br/>
                     <div style={{flexDirection: 'row', width: '200px'}} >

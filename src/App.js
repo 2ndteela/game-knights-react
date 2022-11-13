@@ -4,29 +4,32 @@ import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import Home from './views/Home'
 import JoinGame from './views/JoinGame';
 import HeSaidSheSaidMain from './views/games/HeSaidSheSaid/HeSaidSheSaidMain';
+import HeSaidSheSaidResults from './views/games/HeSaidSheSaid/HeSaidSheSaidResults'
 import './ultilites/firebase.js'
-import GameContextProvider from './contexts/GameContext';
+import SiteHeader from './components/Header/SiteHeader';
+import AnswerIsMain from './views/games/AnswerIs/AnswerIsMain';
 
 function App() {
     
   return (
-    <GameContextProvider>
+    <Router>
     <div className="App">
-      <header>
-        <h3>Game Knights</h3>
-        <div>Quit</div>
-      </header>
+      <SiteHeader />
       <div id="router-container">
-      <Router>
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/join-game' element={<JoinGame />} />
+          
+          {/* He Said She Said routes */}
           <Route path='/hsss' element={<HeSaidSheSaidMain />} />
+          <Route path='/hsss-results' element={<HeSaidSheSaidResults />} />
+
+          {/* Answer Is routes */}
+          <Route path='/ai' element={<AnswerIsMain />} />
         </Routes>
-      </Router>
       </div>
     </div>
-    </GameContextProvider>
+    </Router>
   );
 }
 

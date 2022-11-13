@@ -53,6 +53,7 @@ export const getStoredGameData = () => {
 export const cleanStoredData = () => {
     removeFromLocalStorage('gameCode')
     removeFromLocalStorage('playerId')
+    removeFromLocalStorage('hsssStep')
 }
 
 export const generateCode = () => {
