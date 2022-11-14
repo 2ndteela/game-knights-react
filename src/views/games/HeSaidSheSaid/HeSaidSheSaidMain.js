@@ -77,7 +77,7 @@ export default function HeSaidSheSaidMain() {
                 if(!listener) setListener(l)
             }
         })
-    }, [gameStates.ended, listener, navigate])
+    }, [gameStates, listener, navigate])
 
     const barColor = useMemo(() => {
         if (progress > 50 ) 

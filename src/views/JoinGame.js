@@ -32,11 +32,13 @@ export default function JoinGame() {
     }, [code])
 
     useEffect(() => {
-        if(gameData) {
+        if(!gameData) cleanStoredData()
+
+        else if(gameData) {
             const game = search.get('game')
             const gameStates = getGameStates(game) 
 
-            if(gameData.state === gameStates.started) {
+            if(gameData.state !== gameStates.lobby || gameData.state !== gameStates.ended) {
                 removeListener(lobbyListener)
                 navigate(`/${game}`)
             }
@@ -168,10 +170,11 @@ export default function JoinGame() {
                         <div style={{width: '8px'}}></div>
                         <Button icon={<ShareAltOutlined />} onClick={copySharableAddress} >Share</Button>
                     </div>
-                    {host &&
+                    { host &&
                         (<div style={{paddingTop: '8px', width: '200px'}}>
                             <Button style={{width: '200px'}} type="primary" onClick={beginGame}>Start Game</Button>
-                        </div>)}
+                        </div>)
+                    }
                 </>
                 }
             </div>

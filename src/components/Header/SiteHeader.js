@@ -2,7 +2,6 @@ import React, { useMemo } from "react"
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom"
 import {Button} from 'antd'
 import { LogoutOutlined } from "@ant-design/icons"
-import './SiteHeader.less'
 import { cleanStoredData } from "../../ultilites/utilities"
 
 export default function SiteHeader() {

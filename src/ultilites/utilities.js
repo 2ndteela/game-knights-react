@@ -65,3 +65,22 @@ export const generateCode = () => {
 
     return code
 }
+
+export const whoAmIWaitingOn = (gameData) => {
+    try {
+        const playersStillPlaying = []
+        if(gameData.game === 'ai') {
+
+            gameData.players.forEach((p, itr) => {
+                if(!p.question && itr !== parseInt(gameData.picker)) 
+                    playersStillPlaying.push(p.name)
+            })
+        }
+
+        return playersStillPlaying
+    }
+    catch(error) {
+        console.error(error)
+        return []
+    }
+}

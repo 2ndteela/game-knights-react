@@ -76,6 +76,19 @@ export const listenForGameState = async (callBack) => {
     return listenToDb(`games/${gameCode}/state`, callBack)
 }
 
+
+export const setGameState = async newState => {
+    try {
+        const { gameCode } = getStoredGameData()
+        writeToDb(`games/${gameCode}/state`, newState)
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
 export const setGameFinished = async () => {
     const { gameCode } = getStoredGameData()
     writeToDb(`games/${gameCode}/state`, 'ended')
@@ -132,8 +145,6 @@ export const joinLobby = async (code, player) => {
             const playerCount = Object.keys(data.players).length
             writeToDb(`games/${code}/players/${playerCount}/name`, player)
 
-            if(data.game === 'ai') writeToDb(`games/${code}/order`, data.order + `-${player}`)
-
             return playerCount
         }
         else return -1
@@ -185,7 +196,59 @@ export const getHsssGameData = async () => {
 
 }
 
-
 // Answer Is functions
+export const setAnswerForRound = async answer => {
+    try {
+        const {gameCode} = getStoredGameData()
+        await writeToDb(`games/${gameCode}/answer`, answer)
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+export const setQuestionForUser = async question => {
+    try {
+        const {gameCode, playerId} = getStoredGameData()
+        writeToDb(`games/${gameCode}/players/${playerId}/question`, question)
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+export const awardPoint = async (playerId) => {
+    try {
+        const {gameCode} = getStoredGameData()
+        const points =  await dbReadOnce(`games/${gameCode}/players/${playerId}/points`)
+        await writeToDb(`games/${gameCode}/players/${playerId}/points`, points ? 1 : points + 1)
+        await writeToDb(`games/${gameCode}/recentWinner`, playerId)
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+export const advanceToNextRound = async () => {
+    try {
+        const {gameCode} = getStoredGameData()
+        const gameData = await dbReadOnce(`/games/${gameCode}`)
+        const nextPicker = gameData.picker === gameData.players.length - 1 ? 0 : gameData.picker + 1
+        await writeToDb(`games/${gameCode}/picker`, nextPicker)
+        await setGameState('answer')
+
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
 
 // Word Fight functions
