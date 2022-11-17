@@ -33,7 +33,6 @@ export default function HsssResults() {
             ],
         }
     )
-    const [ showingNotification, setShowingNotification ] = useState(false)
     const [ startIdx, setStartIdx ] = useState(playerId)
     useEffect(() => {
         async function f() {
@@ -42,18 +41,17 @@ export default function HsssResults() {
         }
 
         f()
-    }, [])
 
-    useEffect(() => {
-        if(!haveSeenNotification && !showingNotification) {
+        if(!haveSeenNotification) {
             notification.open({
                 message: 'Author Tags',
                 description: 'Click on any of the highlighted words to see who the author was! (Also ignore that little "X" and click on this bubble to never see this again.)',
                 onClick: () => writeToLocalStorage('notified', true)
             })
-            setShowingNotification(true)
         }
-    }, [haveSeenNotification, showingNotification])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
 
     const story = useMemo(() => {
         if(!storyData?.players[startIdx]?.responses?.length) {

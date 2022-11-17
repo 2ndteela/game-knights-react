@@ -19,12 +19,12 @@ export default function Home() {
                 size="large"
             >He Said, She Said</Button>
             <div style={{height: '8px'}} />
-            <Button 
+            {/* <Button 
                 block
                 onClick={() => goToHeSaidSheSaid('ai')} 
                 style={{backgroundColor: '#323232', borderColor: '#323232'}}
                 size="large"
-            >Answer Is</Button>
+            >Answer Is</Button> */}
         </div>
     )
 }
