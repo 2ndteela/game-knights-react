@@ -1,9 +1,10 @@
 import React, {useState, useEffect, useMemo} from 'react'
 import './he-said-she-said-styles.less'
 import {getHsssGameData} from '../../../ultilites/services'
-import { getStoredGameData } from '../../../ultilites/utilities'
-import { Button } from 'antd'
-import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons'
+import { cleanStoredData, getStoredGameData } from '../../../ultilites/utilities'
+import { Button, Popconfirm } from 'antd'
+import { CaretLeftOutlined, CaretRightOutlined, UserOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 
 
 const startingLines = [
@@ -19,6 +20,9 @@ const startingLines = [
 ]
 
 export default function HsssResults() {
+
+    const navigate = useNavigate()
+
     const {playerId} = getStoredGameData()
     const intro = startingLines[Math.floor(Math.random()) * startingLines.length]
     const [ storyData, setStoryData ] = useState(
@@ -32,7 +36,6 @@ export default function HsssResults() {
     useEffect(() => {
         async function f() {
             const data = await getHsssGameData()
-            console.log(data)
             setStoryData(data)
         }
 
@@ -48,11 +51,14 @@ export default function HsssResults() {
         const playerCount = storyData.players.length
         const story = []
         for(let i = 0; i < 10; i++) {
-            const line = storyData.players[idx].responses[i]
-            story.push(getResponseString(line))
+            const line = storyData.players[idx].responses[i].replace("#", '')
+            const author = storyData.players[idx].name
+            story.push( {
+                author,
+                text: getResponseString(line)
+             })
             idx = (idx + 1) % playerCount
         }
-        console.log(story)
         return story
 
     }, [startIdx, storyData.players])
@@ -71,6 +77,22 @@ export default function HsssResults() {
         return string ? string : 'REDACTED'
     }
 
+    function goHome() {
+        cleanStoredData()
+        navigate('/')
+    }
+
+    function makePopConfirm(idx, padRight = true, padLeft = true) {
+
+        const className = `${padRight ? '' :' no-right'} ${padLeft ? '' : 'no-left'}`
+
+        return (
+            <Popconfirm title={story[idx].author} showCancel={false} icon={<UserOutlined style={{color: 'var(--primary)'}} />}> 
+                <span className={className}>{story[idx].text}</span>
+            </Popconfirm>
+        )
+    }
+
     return (
         <>
             {story.length > 0 && (
@@ -80,15 +102,20 @@ export default function HsssResults() {
                         <h2>Story #{startIdx + 1}</h2>
                         <Button icon={<CaretRightOutlined />} onClick={addOne} />
                     </div>
-                    <h3>{intro}...</h3>
-                    <div className='story-row'> <span className='no-left'>{story[0]}</span> and <span>{story[1]}</span></div>
-                    <div className='story-row'>Were at <span className='no-right' >{story[2]}</span>, <span>{story[3]}</span></div>
-                    <div className='story-row'>When <span>{story[0]}</span> says, "<span className='no-left no-right' >{story[4]}</span>"</div>
-                    <div className='story-row'>And <span>{story[1]}</span> says "<span className='no-left no-right'>{story[5]}</span>"</div>
-                    <div className='story-row'>To which <span>{story[0]}</span> says "<span className='no-left no-right'>{story[6]}</span>"</div>
-                    <div className='story-row'>Then <span>{story[1]}</span> says "<span className='no-left no-right'>{story[7]}</span>"</div>
-                    <div className='story-row'>And so we see that <span>{story[8]}</span></div>
-                    <div className='story-row'>#<span className='no-left no-right'>{story[9]}</span></div>
+                    <div style={{justifyContent: 'space-between', height: '100%', width: '100%'}}>
+                        <div>
+                            <h3>{intro}...</h3>
+                            <div className='story-row'> {makePopConfirm(0, true, false)} and {makePopConfirm(1)}</div>
+                            <div className='story-row'>Were at  {makePopConfirm(2, false, true)},  {makePopConfirm(3, true, true)}</div>
+                            <div className='story-row'>When {makePopConfirm(0)} says, "{makePopConfirm(4, false, false)}"</div>
+                            <div className='story-row'>And {makePopConfirm(1)} says "{makePopConfirm(5, false, false)}"</div>
+                            <div className='story-row'>To which {makePopConfirm(0)} says "{makePopConfirm(6, false, false)}"</div>
+                            <div className='story-row'>Then {makePopConfirm(1)} says "{makePopConfirm(7, false, false)}"</div>
+                            <div className='story-row'>And so we see that {makePopConfirm(8)}</div>
+                            <div className='story-row'>#{makePopConfirm(9, false, false)}</div>
+                        </div>
+                        <Button type='primary' style={{width: '100%'}} onClick={goHome} >Return to home</Button>
+                    </div>
                 </div>
             )}
             {story.length === 0 && <div className='route-container' >

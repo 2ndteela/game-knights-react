@@ -102,11 +102,11 @@ export default function HeSaidSheSaidMain() {
 
     useEffect(() => {
         if(!tick) {
-            if(step < 10 )setTimeout(() => setTick(true), 333)
+            if(step < 10 )setTimeout(() => setTick(true), 1000)
         }
         
         else {
-            if(progress > 0) setProgress(progress - 1)
+            if(progress > 0) setProgress(progress - 3)
             else writeAnswer()
 
             setTick(false)

@@ -9,6 +9,7 @@ export default function JoinGame() {
     const {playerId, gameCode} = getStoredGameData()
     const [ code, setCode ] = useState(gameCode)
     const [ screenName, setScreenName ] = useState()
+    const [ pointsToWin, setPointsToWin ] = useState(5)
     const [ playerType, setPlayerType ] = useState('join')
     const [ joined, setJoined ] = useState(false)
     const [ peopleInLobby, setPeopleInLobby ] = useState(1)
@@ -22,6 +23,19 @@ export default function JoinGame() {
     const host = useMemo(() => {
         return playerType === 'host' || playerId === 0
     }, [playerType, playerId])
+
+    const gameType = useMemo(() => {
+        return search.get('game')
+    }, [search])
+
+    const canJoin = useMemo(() => {
+    if(gameType === 'hsss' && screenName && code) return true
+    else if(gameType === 'ai') {
+        if(host && screenName && code && pointsToWin) return true
+        else if(screenName && code) return true
+    } 
+    return false
+    }, [gameType, screenName, code, host, pointsToWin])
 
     const startListeningForGame = useCallback(() => {
         if(code)
@@ -38,12 +52,15 @@ export default function JoinGame() {
             const game = search.get('game')
             const gameStates = getGameStates(game) 
 
-            if(gameData.state !== gameStates.lobby || gameData.state !== gameStates.ended) {
+            if(gameData.state !== gameStates.lobby) {
                 removeListener(lobbyListener)
                 navigate(`/${game}`)
             }
 
-            else if(gameData.state === gameStates.ended) cleanStoredData()
+            else if(gameData.state === gameStates.ended) {
+                cleanStoredData()
+
+            }
 
             else if(gameData.players?.length) setPeopleInLobby(gameData.players.length)
         }
@@ -80,7 +97,7 @@ export default function JoinGame() {
         if(!game) message.warning("What type of game are your joining? Try going back to the home page and selecting your game again")
         else {
             let playerId = 0
-            if(host) openLobby(code, game, screenName)
+            if(host) openLobby(code, game, screenName, pointsToWin)
 
             if(!host) playerId = await joinLobby(code, screenName)
 
@@ -148,8 +165,19 @@ export default function JoinGame() {
                         <span style={{width: '100%'}}>Screen Name</span>
                         <Input size="large" value={screenName} onChange={e => setScreenName(e.target.value)} />
                     <br/>
+
+                    {
+                        gameType === 'ai' && host && (
+                            <>
+                                <span style={{width: '100%'}}>Points to win</span>
+                                <Input size="large" value={pointsToWin} onChange={e => setPointsToWin(e.target.value)} />
+                                <br />
+                            </>
+                        )
+                    }
+
                     <div style={{alignItems: "flex-end", width: '100%'}}>
-                        <Button type="primary" onClick={joinGame}>{ host ? 'Open Lobby' : 'Join Game'}</Button>
+                        <Button type="primary" onClick={joinGame} disabled={!canJoin} >{ host ? 'Open Lobby' : 'Join Game'}</Button>
                     </div>
                 </> :
                 <>

@@ -84,3 +84,42 @@ export const whoAmIWaitingOn = (gameData) => {
         return []
     }
 }
+
+export const makeRandomAIAnswer = () => {
+    const answers = [
+        '69 ;)',
+        '420',
+        'Your mom',
+        'Perry the Platypus',
+        'The great pyramids',
+        'England',
+        'The Queen (RIP)',
+        'Adam and Eve',
+        'The Office',
+        'Micheal Scott',
+        'Mike Tyson',
+        'Tom Cruise',
+        'Your Boss',
+        'It is what it is',
+        'Yes',
+        'No',
+        'Coffee',
+        'Santa',
+        'The Dahla Lama',
+        'Cbat',
+        'Fire',
+        'Champagne',
+        'Kiss the person to my left',
+        'Dance',
+        'Stripping',
+        'Boxes',
+        'Dreams',
+        'The Lord of the Rings',
+        'Captain Falcon',
+        'The Beatles',
+        'Charizard',
+        'Sushi'
+    ]
+
+    return answers[Math.floor(Math.random() * answers.length)]
+}

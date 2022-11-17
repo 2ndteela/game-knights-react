@@ -16,6 +16,7 @@ export default function SiteHeader() {
 
     const title = useMemo(() => {
         if(search.get('game') === 'hsss' || location.pathname.includes('hsss')) return 'He Said She Said'
+        if(search.get('game') === 'ai' || location.pathname.includes('ai')) return 'Answer Is'
         return 'Game Knights'
     }, [location, search])
 

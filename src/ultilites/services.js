@@ -116,7 +116,7 @@ export const getNewGameCode = async () => {
     }
 }
 
-export const openLobby = async (code, game, screenName) => {
+export const openLobby = async (code, game, screenName, pointsToWin) => {
 
     const gameData = {
         state: 'lobby',
@@ -128,7 +128,13 @@ export const openLobby = async (code, game, screenName) => {
         ]
     }
 
-    if(game === 'ai') gameData.picker = 0
+    if(game === 'ai') {
+        gameData.picker = 0
+
+        if(!pointsToWin) return
+
+        gameData.pointsToWin = pointsToWin
+    }
 
     writeToDb(`games/${code}`, gameData)
 }
@@ -212,7 +218,7 @@ export const setAnswerForRound = async answer => {
 export const setQuestionForUser = async question => {
     try {
         const {gameCode, playerId} = getStoredGameData()
-        writeToDb(`games/${gameCode}/players/${playerId}/question`, question)
+        writeToDb(`games/${gameCode}/players/${playerId}/question`, question ? question : '--')
     }
     catch(error) {
         console.error(error)
@@ -223,8 +229,9 @@ export const setQuestionForUser = async question => {
 export const awardPoint = async (playerId) => {
     try {
         const {gameCode} = getStoredGameData()
-        const points =  await dbReadOnce(`games/${gameCode}/players/${playerId}/points`)
-        await writeToDb(`games/${gameCode}/players/${playerId}/points`, points ? 1 : points + 1)
+        const points = await dbReadOnce(`games/${gameCode}/players/${playerId}/points`)
+        console.log(points)
+        await writeToDb(`games/${gameCode}/players/${playerId}/points`, points ? points + 1 : 1)
         await writeToDb(`games/${gameCode}/recentWinner`, playerId)
         return true
     }
@@ -238,8 +245,13 @@ export const advanceToNextRound = async () => {
     try {
         const {gameCode} = getStoredGameData()
         const gameData = await dbReadOnce(`/games/${gameCode}`)
+        const copy = {...gameData}
         const nextPicker = gameData.picker === gameData.players.length - 1 ? 0 : gameData.picker + 1
-        await writeToDb(`games/${gameCode}/picker`, nextPicker)
+        
+        copy.players.forEach( p => delete p.question)
+        copy.picker = nextPicker
+
+        await writeToDb(`games/${gameCode}`, copy)
         await setGameState('answer')
 
         return true
