@@ -1,8 +1,8 @@
 import React, {useState, useEffect, useMemo} from 'react'
 import './he-said-she-said-styles.less'
-import {getHsssGameData} from '../../../ultilites/services'
-import { cleanStoredData, getStoredGameData } from '../../../ultilites/utilities'
-import { Button, Popconfirm } from 'antd'
+import { getHsssGameData } from '../../../ultilites/services'
+import { cleanStoredData, getFromLocalStorage, getStoredGameData, writeToLocalStorage } from '../../../ultilites/utilities'
+import { Button, Popconfirm, notification } from 'antd'
 import { CaretLeftOutlined, CaretRightOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 
@@ -20,11 +20,12 @@ const startingLines = [
 ]
 
 export default function HsssResults() {
-
     const navigate = useNavigate()
-
     const {playerId} = getStoredGameData()
     const intro = startingLines[Math.floor(Math.random()) * startingLines.length]
+    const haveSeenNotification = getFromLocalStorage('notified')
+
+    
     const [ storyData, setStoryData ] = useState(
         {
             state: 'ended',
@@ -32,6 +33,7 @@ export default function HsssResults() {
             ],
         }
     )
+    const [ showingNotification, setShowingNotification ] = useState(false)
     const [ startIdx, setStartIdx ] = useState(playerId)
     useEffect(() => {
         async function f() {
@@ -41,6 +43,17 @@ export default function HsssResults() {
 
         f()
     }, [])
+
+    useEffect(() => {
+        if(!haveSeenNotification && !showingNotification) {
+            notification.open({
+                message: 'Author Tags',
+                description: 'Click on any of the highlighted words to see who the author was! (Also ignore that little "X" and click on this bubble to never see this again.)',
+                onClick: () => writeToLocalStorage('notified', true)
+            })
+            setShowingNotification(true)
+        }
+    }, [haveSeenNotification, showingNotification])
 
     const story = useMemo(() => {
         if(!storyData?.players[startIdx]?.responses?.length) {
