@@ -82,8 +82,9 @@ export default function JoinGame() {
                 })
             else setCode(newCode)
         }
+        else if (search.get('gameCode')) setCode(search.get('gameCode'))
         else setCode('')
-    }, [host, newCode])
+    }, [host, newCode, search])
 
     const radioOptions = [
         {label: 'Hosting', value: 'host'},
