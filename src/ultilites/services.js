@@ -94,6 +94,28 @@ export const setGameFinished = async () => {
     writeToDb(`games/${gameCode}/state`, 'ended')
 }
 
+const cleanOldData = async () => {
+    try {
+        const games = await dbReadOnce('/games')
+        const keys = Object.keys(games)
+        const NOW = new Date()
+        const ONE_WEEK = 6.048e+8
+
+        keys.forEach(k => {
+            const g = games[k]
+            const gameStarted = new Date(g.started)
+            if(NOW - gameStarted > ONE_WEEK)
+                writeToDb(`/games/${k}`, null)
+        })
+
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
 // He Said She Said functions
 export const removeMeFromLobby = () => {
     const { gameCode, playerId} = getStoredGameData()
@@ -121,6 +143,7 @@ export const openLobby = async (code, game, screenName, pointsToWin) => {
     const gameData = {
         state: 'lobby',
         game,
+        started: new Date().toISOString().substring(0, 10),
         players: [
             {
                 name: screenName,
@@ -137,11 +160,14 @@ export const openLobby = async (code, game, screenName, pointsToWin) => {
     }
 
     writeToDb(`games/${code}`, gameData)
+    cleanOldData()
 }
 
-export const startGame = async () => {
+export const startGame = async (starter) => {
     const { gameCode } = getStoredGameData()
     writeToDb(`games/${gameCode}/state`, 'started')
+    if(starter)
+        writeToDb(`games/${gameCode}/picker`, starter)
 }
 
 export const joinLobby = async (code, player) => {
@@ -250,6 +276,7 @@ export const advanceToNextRound = async () => {
         
         copy.players.forEach( p => delete p.question)
         copy.picker = nextPicker
+        delete copy.votes
 
         await writeToDb(`games/${gameCode}`, copy)
         await setGameState('answer')
@@ -262,5 +289,36 @@ export const advanceToNextRound = async () => {
     }
 }
 
+export const voteToContinue = async () => {
+    try {
+        const {gameCode} = getStoredGameData()
+        const gameData = await dbReadOnce(`/games/${gameCode}`)
+
+        if(gameData?.votes + 1 > (gameData.players.length / 2)) {
+            advanceToNextRound()
+        }
+
+        else 
+            writeToDb(`games/${gameCode}/votes`, gameData.votes ? gameData.votes + 1 : 1)
+
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
 
 // Word Fight functions
+export const setWord = async (word) => {
+    try {
+        const {gameData} = getStoredGameData()
+        writeToDb(`/games/${gameData}/word`)
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}

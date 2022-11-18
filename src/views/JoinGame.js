@@ -129,7 +129,9 @@ export default function JoinGame() {
     }
 
     function beginGame() {
-        startGame()
+        const game = search.get('game')
+        const starter = game === 'hsss' ? null : Math.floor(Math.random() * peopleInLobby)
+        startGame(starter)
     }
 
     return (

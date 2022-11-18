@@ -6,7 +6,7 @@ export default function Home() {
 
     const navigate = useNavigate()
 
-    function goToHeSaidSheSaid(game) {
+    function goToGame(game) {
         navigate(`/join-game?game=${game}`)
     }
 
@@ -14,17 +14,24 @@ export default function Home() {
         <div id="home-container" className="route-container center-up">
             <Button 
                 block
-                onClick={() => goToHeSaidSheSaid('hsss')} 
+                onClick={() => goToGame('hsss')} 
                 style={{backgroundColor: '#323232', borderColor: '#323232'}}
                 size="large"
             >He Said, She Said</Button>
             <div style={{height: '8px'}} />
-            {/* <Button 
+            <Button 
                 block
-                onClick={() => goToHeSaidSheSaid('ai')} 
+                onClick={() => goToGame('ai')} 
                 style={{backgroundColor: '#323232', borderColor: '#323232'}}
                 size="large"
-            >Answer Is</Button> */}
+            >Answer Is</Button>
+            <div style={{height: '8px'}} />
+            <Button
+                block
+                onClick={() => goToGame('wf')}
+                style={{backgroundColor: '#323232', borderColor: '#323232'}}
+                size="large"
+            >Word Fight</Button>
         </div>
     )
 }

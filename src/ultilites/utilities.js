@@ -54,6 +54,7 @@ export const cleanStoredData = () => {
     removeFromLocalStorage('gameCode')
     removeFromLocalStorage('playerId')
     removeFromLocalStorage('hsssStep')
+    removeFromLocalStorage('ai-voted')
 }
 
 export const generateCode = () => {

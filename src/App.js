@@ -8,6 +8,7 @@ import HeSaidSheSaidResults from './views/games/HeSaidSheSaid/HeSaidSheSaidResul
 import './ultilites/firebase.js'
 import SiteHeader from './components/Header/SiteHeader';
 import AnswerIsMain from './views/games/AnswerIs/AnswerIsMain';
+import WordFightMain from './views/games/WordFight/WordFightMain';
 
 function App() {
     
@@ -26,6 +27,9 @@ function App() {
 
           {/* Answer Is routes */}
           <Route path='/ai' element={<AnswerIsMain />} />
+
+          {/* Word Fight Routes */}
+          <Route path='/wf' element={<WordFightMain />} />
         </Routes>
       </div>
     </div>

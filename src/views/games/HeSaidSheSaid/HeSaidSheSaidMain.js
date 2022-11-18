@@ -106,7 +106,7 @@ export default function HeSaidSheSaidMain() {
         }
         
         else {
-            if(progress > 0) setProgress(progress - 3)
+            if(progress > 0) setProgress(progress - 2)
             else writeAnswer()
 
             setTick(false)

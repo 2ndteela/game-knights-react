@@ -1,13 +1,30 @@
 import { Button, Input, Progress } from 'antd'
 import React, {useState, useMemo, useEffect} from 'react'
-import { advanceToNextRound, awardPoint, listenForGameUpdates, removeListener, setAnswerForRound, setGameState, setQuestionForUser } from '../../../ultilites/services'
-import { getGameStates, getStoredGameData, makeRandomAIAnswer, whoAmIWaitingOn } from '../../../ultilites/utilities'
+import { 
+    awardPoint, 
+    listenForGameUpdates, 
+    removeListener, 
+    setAnswerForRound, 
+    setGameState, 
+    setQuestionForUser, 
+    voteToContinue 
+} from '../../../ultilites/services'
+import { getFromLocalStorage,
+    getGameStates, 
+    getStoredGameData, 
+    makeRandomAIAnswer, 
+    whoAmIWaitingOn, 
+    writeToLocalStorage 
+} from '../../../ultilites/utilities'
+import { ArrowRightOutlined } from '@ant-design/icons'
 import './AnswerIsStyles.less'
+import { useNavigate } from 'react-router-dom'
 
 export default function AnswerIsMain() {
     const gameStates = getGameStates('ai')
     const {playerId} = getStoredGameData()
     const {TextArea} = Input
+    const navigate = useNavigate()
 
     const [ gameData, setGameData ] = useState()
     const [ response, setResponse ] = useState()
@@ -16,6 +33,7 @@ export default function AnswerIsMain() {
     const [ waitingList, setWaitingList ] = useState([])
     const [ progress, setProgress ] = useState(100)
     const [ tick, setTick ] = useState(false)
+    const [ votedToContinue, setVotedToContinue ] = useState(false)
     
 
     const view = useMemo(() => {
@@ -42,18 +60,20 @@ export default function AnswerIsMain() {
     useEffect(() => {
         async function f() {
             listenForGameUpdates((data, l) => {
-                console.log('got update', data)
                 if(data.state === gameStates.ended) {
                     if(listener) removeListener(l)
                 }
     
                 else {
                     const isPicker = playerId === data?.picker
+                    const voted = getFromLocalStorage('ai-voted')
                     
                     if(!listener) setListener(l)
 
                     if(gameStates.writingQuestions && data.players[playerId].question)
                         setResponded(true)
+
+                    if(gameStates.results && voted) setVotedToContinue(true)
 
                     if((responded || isPicker) && data.state !== gameStates.results) {
                         const waitingListCheck = whoAmIWaitingOn(data)
@@ -80,6 +100,8 @@ export default function AnswerIsMain() {
 
     async function setAnswer() {
         const resp = await setAnswerForRound(response || '-')
+        setVotedToContinue(false)
+        writeToLocalStorage('ai-voted', false)
         if(resp) {
             setResponse('')
             setGameState(gameStates.writingQuestions)
@@ -91,6 +113,8 @@ export default function AnswerIsMain() {
 
     async function setQuestion() {
         const resp = setQuestionForUser(response)
+        setVotedToContinue(false)
+        writeToLocalStorage('ai-voted', false)
         if(resp) {
             setResponse('')
             setResponded(true)
@@ -115,11 +139,10 @@ export default function AnswerIsMain() {
         
         else {
             if(progress > 0) {
-                setProgress(progress - (view === 'results' ? 10 : 3))
+                setProgress(progress - 2)
                 setTick(false)
             }
             else {
-                const isPicker = playerId === gameData?.picker
                 if(view === 'answering') {
                     setResponse(makeRandomAIAnswer())
                     setAnswer()
@@ -128,10 +151,6 @@ export default function AnswerIsMain() {
                 else if(view === 'questions') {
                     setResponse('-')
                     setQuestion()
-                }
-
-                else if (view === 'results' && isPicker) {
-                    advanceToNextRound()
                 }
             }
         }
@@ -147,6 +166,35 @@ export default function AnswerIsMain() {
 
         return '#ff0000bb'
     }, [progress])
+
+    const sortedPlayers = useMemo(() => {
+        if(!gameData) return []
+        if(!gameData.players) return []
+        
+        const sorted =  gameData.players.sort((a, b) => {
+            if(a.points && !b.points) return -1
+            else if (!a.points && b.points) return 1
+            else if (a.points > b.points) return -1
+            else if (a.points < b.points) return 1
+            return 0
+        })
+        return sorted
+    }, [gameData])
+
+    const winner = useMemo(() => {
+        if(!gameData) return null
+        return gameData.players.find(p => p.points === gameData.pointsToWin)
+    }, [gameData])
+
+    async function voteToGoToNextRound() {
+        writeToLocalStorage('ai-voted', true)
+        const voted = await voteToContinue()
+        if(voted) setVotedToContinue(true)
+    }
+
+    function goHome() {
+        navigate('/')
+    }
 
     return (
         <div className='route-container' id="answer-is-responses">
@@ -220,18 +268,37 @@ export default function AnswerIsMain() {
                 )
             }
             {
-                view === 'results' && (
+                view === 'results' && !winner && (
                     <div id="leader-board">
-                        <span>Next Round</span>
-                        <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
-                        <br></br>
-                        {gameData.players.map((p, itr) => {
-                            if(p.points) return <h3 style={{ color: itr === gameData?.recentWinner ? 'deepskyblue': 'white'}} >{p.name}: {p.points}</h3>
-                            return <h3>{p.name}: 0</h3>
-                        })}
+                        <div style={{width: '100%'}} >
+                            <div id="results-header">
+                                <h1>Leader Board</h1>
+                                <h3>Game to: {gameData.pointsToWin}</h3>
+                            </div>
+                            {sortedPlayers.map((p, itr) => {
+                                if(p.points) return <h3 style={{ color: itr === gameData?.recentWinner ? 'deepskyblue': 'white'}} >{p.name}: {p.points}</h3>
+                                return <h3>{p.name}: 0</h3>
+                            })}
+                        </div>
+                        <Button
+                            type='primary'
+                            block
+                            onClick={voteToGoToNextRound}
+                            disabled={votedToContinue}
+                        >
+                            <span>Ready For Next Round</span>
+                            <ArrowRightOutlined />
+                            </Button>
                     </div>
                 )   
             }
+            {view === 'results' && winner && (
+                <div style={{width: '100%', alignItems: 'center'}} >
+                    <h1 style={{width: '100%', textAlign: 'center', color: 'deepskyblue' }} >{winner.name} Wins!</h1>
+                    <br />
+                    <Button onClick={goHome} size="large" >Return to Home</Button>
+                </div>
+            )}
         </div>
     )
 }

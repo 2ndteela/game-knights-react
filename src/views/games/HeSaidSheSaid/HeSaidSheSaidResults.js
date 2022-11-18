@@ -23,7 +23,7 @@ export default function HsssResults() {
     const navigate = useNavigate()
     const {playerId} = getStoredGameData()
     const intro = startingLines[Math.floor(Math.random()) * startingLines.length]
-    const haveSeenNotification = getFromLocalStorage('notified')
+    const haveSeenNotification = getFromLocalStorage('hsss-notified')
 
     
     const [ storyData, setStoryData ] = useState(
@@ -46,7 +46,7 @@ export default function HsssResults() {
             notification.open({
                 message: 'Author Tags',
                 description: 'Click on any of the highlighted words to see who the author was! (Also ignore that little "X" and click on this bubble to never see this again.)',
-                onClick: () => writeToLocalStorage('notified', true)
+                onClick: () => writeToLocalStorage('hsss-notified', true)
             })
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,7 +125,12 @@ export default function HsssResults() {
                             <div className='story-row'>And so we see that {makePopConfirm(8)}</div>
                             <div className='story-row'>#{makePopConfirm(9, false, false)}</div>
                         </div>
-                        <Button type='primary' style={{width: '100%'}} onClick={goHome} >Return to home</Button>
+                        <Button 
+                            type='primary' 
+                            style={{width: '100%'}} 
+                            onClick={goHome} 
+                            size="large" 
+                        >Return to home</Button>
                     </div>
                 </div>
             )}
