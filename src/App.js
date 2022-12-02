@@ -9,31 +9,43 @@ import './ultilites/firebase.js'
 import SiteHeader from './components/Header/SiteHeader';
 import AnswerIsMain from './views/games/AnswerIs/AnswerIsMain';
 import WordFightMain from './views/games/WordFight/WordFightMain';
+import { ConfigProvider, theme } from 'antd';
 
 function App() {
+
+  const { darkAlgorithm } = theme;
     
   return (
-    <Router>
-    <div className="App">
-      <SiteHeader />
-      <div id="router-container">
-        <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path='/join-game' element={<JoinGame />} />
-          
-          {/* He Said She Said routes */}
-          <Route path='/hsss' element={<HeSaidSheSaidMain />} />
-          <Route path='/hsss-results' element={<HeSaidSheSaidResults />} />
+    <ConfigProvider 
+    theme={{
+      algorithm: [darkAlgorithm],
+      token: {
+        primaryColor: '#00b96b',
+      },
+    }}
+    >
+      <Router>
+        <div className="App">
+          <SiteHeader />
+          <div id="router-container">
+            <Routes>
+              <Route path='/' element={<Home />} />
+              <Route path='/join-game' element={<JoinGame />} />
+              
+              {/* He Said She Said routes */}
+              <Route path='/hsss' element={<HeSaidSheSaidMain />} />
+              <Route path='/hsss-results' element={<HeSaidSheSaidResults />} />
 
-          {/* Answer Is routes */}
-          <Route path='/ai' element={<AnswerIsMain />} />
+              {/* Answer Is routes */}
+              <Route path='/ai' element={<AnswerIsMain />} />
 
-          {/* Word Fight Routes */}
-          <Route path='/wf' element={<WordFightMain />} />
-        </Routes>
-      </div>
-    </div>
-    </Router>
+              {/* Word Fight Routes */}
+              <Route path='/wf' element={<WordFightMain />} />
+            </Routes>
+          </div>
+        </div>
+      </Router>
+    </ConfigProvider>
   );
 }
 

@@ -138,6 +138,7 @@ export default function HeSaidSheSaidMain() {
                 <Input
                     value={response}
                     onChange={e => setResponse(e.target.value)}
+                    style={{borderRadius: '0px'}}
                 />
                 <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
                 <div id="buttons-container">

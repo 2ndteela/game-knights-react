@@ -313,8 +313,39 @@ export const voteToContinue = async () => {
 // Word Fight functions
 export const setWord = async (word) => {
     try {
-        const {gameData} = getStoredGameData()
-        writeToDb(`/games/${gameData}/word`)
+        const {gameCode} = getStoredGameData()
+        const wordCheck = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+        const wordData = await wordCheck.json()
+        if(!wordData?.length) return false
+
+        await writeToDb(`/games/${gameCode}/word`, word)
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+export const checkStringForRealWord = async (word) => {
+    try {
+        const wordCheck = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+        const wordData = await wordCheck.json()
+        if(!wordData?.length) return false
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+
+export const markWordGuessed = async (place) => {
+    try {
+        const {gameCode, playerId} = getStoredGameData()
+        await writeToDb(`/games/${gameCode}/players${playerId}/guessed`, true)
+        await writeToDb(`/games/${gameCode}/players${playerId}/place`, place)
         return true
     }
     catch(error) {

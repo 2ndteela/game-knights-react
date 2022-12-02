@@ -124,3 +124,11 @@ export const makeRandomAIAnswer = () => {
 
     return answers[Math.floor(Math.random() * answers.length)]
 }
+
+export const createHiddenWord = (word) => {
+    const arr = []
+    for(let i = 0; i < word.length; i++) 
+        arr.push('?')
+
+    return arr.join('')
+}

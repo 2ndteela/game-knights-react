@@ -30,6 +30,7 @@ export default function JoinGame() {
 
     const canJoin = useMemo(() => {
     if(gameType === 'hsss' && screenName && code) return true
+    else if (gameType === 'wf' && screenName && code) return true
     else if(gameType === 'ai') {
         if(host && screenName && code && pointsToWin) return true
         else if(screenName && code) return true
@@ -138,7 +139,7 @@ export default function JoinGame() {
             <div className="route-container center-up" style={{justifyContent: 'center'}}>
                 {!joined ? <>
                     <div style={{flexDirection: 'row', width: '100%', alignItems: 'center', paddingBottom: '16px'}}>
-                        <span style={{width: '100%', paddingBottom: '2px'}}>I am</span>
+                        <span style={{width: '100%'}}>I am</span>
                         <Radio.Group 
                             options={radioOptions} 
                             value={playerType} 
@@ -150,7 +151,7 @@ export default function JoinGame() {
                         />
                     </div>
                     <br/>
-                    <span style={{width: '100%'}}>Game Code</span>
+                    <span style={{width: '100%', paddingBottom: '2px' }}>Game Code</span>
                     <Input.Group compact>
                         <Input 
                             size="large" 
@@ -165,14 +166,14 @@ export default function JoinGame() {
                         </Tooltip>
                     </Input.Group>
                     <br/>
-                        <span style={{width: '100%'}}>Screen Name</span>
+                        <span style={{width: '100%', paddingBottom: '2px' }}>Screen Name</span>
                         <Input size="large" value={screenName} onChange={e => setScreenName(e.target.value)} />
                     <br/>
 
                     {
                         gameType === 'ai' && host && (
                             <>
-                                <span style={{width: '100%'}}>Points to win</span>
+                                <span style={{width: '100%', paddingBottom: '2px'}}>Points to win</span>
                                 <Input size="large" value={pointsToWin} onChange={e => setPointsToWin(e.target.value)} />
                                 <br />
                             </>
