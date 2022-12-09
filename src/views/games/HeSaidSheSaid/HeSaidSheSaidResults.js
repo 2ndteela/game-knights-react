@@ -4,7 +4,7 @@ import { getHsssGameData } from '../../../ultilites/services'
 import { cleanStoredData, getFromLocalStorage, getStoredGameData, writeToLocalStorage } from '../../../ultilites/utilities'
 import { Button, Popconfirm, notification } from 'antd'
 import { CaretLeftOutlined, CaretRightOutlined, UserOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 
 const startingLines = [
@@ -19,11 +19,15 @@ const startingLines = [
     'Let me tell you a story'
 ]
 
+const errorString = 'Error Finding Game'
+
 export default function HsssResults() {
     const navigate = useNavigate()
     const {playerId} = getStoredGameData()
     const intro = startingLines[Math.floor(Math.random()) * startingLines.length]
     const haveSeenNotification = getFromLocalStorage('hsss-notified')
+    const [search] = useSearchParams()
+    const queryId = search.get('gameCode')
 
     
     const [ storyData, setStoryData ] = useState(
@@ -33,11 +37,16 @@ export default function HsssResults() {
             ],
         }
     )
-    const [ startIdx, setStartIdx ] = useState(playerId)
+    const [ startIdx, setStartIdx ] = useState(playerId || 0)
     useEffect(() => {
         async function f() {
-            const data = await getHsssGameData()
-            setStoryData(data)
+            console.log(queryId)
+            const data = await getHsssGameData(queryId)
+
+            if(data)
+                setStoryData(data)
+            else if(!data && queryId)
+                setStoryData(errorString)
         }
 
         f()
@@ -52,35 +61,61 @@ export default function HsssResults() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    const fixedStoryArray = useMemo(() => {
+        if(storyData === errorString)
+            return storyData
+
+        const keys = Object.keys(storyData.players)
+        const arr = []
+
+        keys.forEach((k, idx) => {
+            arr[idx] = storyData.players[k]
+        })
+
+        return arr
+        
+    }, [storyData])
+
 
     const story = useMemo(() => {
-        if(!storyData?.players[startIdx]?.responses?.length) {
-            console.log('aborted')
+        try {
+
+            if(fixedStoryArray === errorString)
+                return errorString
+
+            if(!fixedStoryArray.length) 
+                return []
+            
+            let idx = startIdx || 0
+            const playerCount = fixedStoryArray.length
+            const story = []
+            for(let i = 0; i < 10; i++) {
+                const next = fixedStoryArray[idx]
+
+                const line = next.responses[i].replace("#", '')
+                const author = next.name
+                story.push( {
+                    author,
+                    text: getResponseString(line)
+                })
+                idx = (idx + 1) % playerCount
+            }
+            return story
+        }
+        catch(error) {
+            console.error(error)
             return []
         }
-        let idx = startIdx
-        const playerCount = storyData.players.length
-        const story = []
-        for(let i = 0; i < 10; i++) {
-            const line = storyData.players[idx].responses[i].replace("#", '')
-            const author = storyData.players[idx].name
-            story.push( {
-                author,
-                text: getResponseString(line)
-             })
-            idx = (idx + 1) % playerCount
-        }
-        return story
 
-    }, [startIdx, storyData.players])
+    }, [startIdx, fixedStoryArray])
 
     function addOne() {
-        if(startIdx === storyData.players.length - 1)setStartIdx(0)
+        if(startIdx === fixedStoryArray.length - 1) setStartIdx(0)
         else setStartIdx(startIdx + 1)
     }
 
     function subtractOne() {
-        if(startIdx === 0) setStartIdx(storyData.players.length - 1)
+        if(startIdx === 0) setStartIdx(fixedStoryArray.length - 1)
         else setStartIdx(startIdx - 1)
     }
 
@@ -97,16 +132,18 @@ export default function HsssResults() {
 
         const className = `${padRight ? '' :' no-right'} ${padLeft ? '' : 'no-left'}`
 
-        return (
-            <Popconfirm title={story[idx].author} showCancel={false} icon={<UserOutlined style={{color: 'var(--primary)'}} />}> 
-                <span className={className}>{story[idx].text}</span>
-            </Popconfirm>
-        )
+        if(story[idx])
+            return (
+                <Popconfirm title={story[idx].author} showCancel={false} icon={<UserOutlined style={{color: 'var(--primary)'}} />}> 
+                    <span className={className}>{story[idx].text}</span>
+                </Popconfirm>
+            )
+        return null
     }
 
     return (
         <>
-            {story.length > 0 && (
+            {story.length > 0 && story !== errorString && (
                 <div className='route-container' id="story-container" >
                     <div id="story-header">
                         <Button icon={<CaretLeftOutlined />} onClick={subtractOne} />
@@ -135,9 +172,15 @@ export default function HsssResults() {
                 </div>
             )}
             {story.length === 0 && <div className='route-container' >
-                <h2>Opps</h2>
+                <h2>Oops</h2>
                 <p>It looks like one or more of your players did not log any answers, so the game could not be completed :(</p>
             </div>}
+            {story === errorString && (
+                <div className='route-container' >
+                    <h3>Error retrieving story</h3>
+                    <p>Look like the story you were looking for doesn't exists or has been archived. Sorry about that :/</p>
+                </div>
+            )}
         </>
     )
 }

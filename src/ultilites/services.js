@@ -215,9 +215,9 @@ export const checkForEndOfHsssGame = async () => {
     }
 }
 
-export const getHsssGameData = async () => {
+export const getHsssGameData = async (queryCode = null) => {
     try {
-        const {gameCode} = getStoredGameData()
+        const gameCode = queryCode ? queryCode : getStoredGameData()?.gameCode
         const data = await dbReadOnce(`games/${gameCode}`)
         return data
     }
