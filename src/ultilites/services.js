@@ -183,6 +183,7 @@ export const joinLobby = async (code, player) => {
     }
     catch(error) {
         console.error(error)
+        return false
     }
 }
 
@@ -319,6 +320,8 @@ export const setWord = async (word) => {
         if(!wordData?.length) return false
 
         await writeToDb(`/games/${gameCode}/word`, word)
+        await writeToDb(`/games/${gameCode}/startTime`, new Date().toISOString())
+        console.log('done')
         return true
     }
     catch(error) {
@@ -341,11 +344,59 @@ export const checkStringForRealWord = async (word) => {
 }
 
 
-export const markWordGuessed = async (place) => {
+export const markWordGuessed = async (timeStamp) => {
     try {
         const {gameCode, playerId} = getStoredGameData()
-        await writeToDb(`/games/${gameCode}/players${playerId}/guessed`, true)
-        await writeToDb(`/games/${gameCode}/players${playerId}/place`, place)
+        await writeToDb(`/games/${gameCode}/players/${playerId}/timeStamp`, timeStamp)
+        return true
+    }
+    catch(error) {
+        console.error(error)
+        return false
+    }
+}
+
+export const startNextRound = async () => {
+    try {
+        const {gameCode} = getStoredGameData()
+        const gameData = await dbReadOnce(`/games/${gameCode}`)
+        const copy = {...gameData}
+        copy.picker += 1
+        delete copy.word 
+        delete copy.startTime
+
+        console.log('copy', copy.players)
+
+        copy.players.forEach(p => {
+            console.log('p', p)
+
+            let pointsToAward = 0
+
+            if(p.timeStamp) {
+                const startDate = new Date(gameData.startTime)
+                const roundComplete = new Date(p.timeStamp)
+                const timeDiff = (roundComplete - startDate) / 1000
+
+                if(timeDiff < 300) pointsToAward = Math.ceil(300 - timeDiff)
+                
+                if(!p.points) p.points = pointsToAward 
+                else p.points += pointsToAward
+
+                delete p.timeStamp
+            }
+        })
+
+        if(!gameData.rounds) copy.rounds = 1
+        else copy.rounds = copy.rounds += 1
+
+        if(copy.picker > copy.players.length - 1) copy.picker = 0
+
+        console.log(copy.rounds, copy.players.length)
+
+        if(copy.rounds > copy.players.length) copy.state = 'ended'
+
+        writeToDb(`games/${gameCode}`, copy)
+
         return true
     }
     catch(error) {

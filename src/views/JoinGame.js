@@ -103,9 +103,12 @@ export default function JoinGame() {
 
             if(!host) playerId = await joinLobby(code, screenName)
 
-            writeNewGameData(code, playerId)
-            startListeningForGame()
-            setJoined(true)
+            if(playerId > -1) {
+                writeNewGameData(code, playerId)
+                startListeningForGame()
+                setJoined(true)
+            }
+            else message.warning("Looks like that game does not exist :/")
         }
     }
 

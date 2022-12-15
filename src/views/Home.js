@@ -26,12 +26,12 @@ export default function Home() {
                     size="large"
                 >Answer Is</Button>
                 <div style={{height: '8px'}} />
-                {/* <Button
+                <Button
                     block
                     onClick={() => goToGame('wf')}
                     style={{backgroundColor: '#323232', borderColor: '#323232'}}
                     size="large"
-                >Word Fight</Button> */}
+                >Word Fight</Button>
             </div>
     )
 }

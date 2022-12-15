@@ -126,6 +126,7 @@ export const makeRandomAIAnswer = () => {
 }
 
 export const createHiddenWord = (word) => {
+    if(!word) return '????????'
     const arr = []
     for(let i = 0; i < word.length; i++) 
         arr.push('?')

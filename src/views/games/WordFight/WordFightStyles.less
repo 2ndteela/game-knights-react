@@ -8,6 +8,11 @@
         width: 100%; 
         justify-content: center;
         max-height: calc(100vh - 84px)
+
+    }
+
+    .main-container.guessed-screen, .main-container.waiting-screen {
+        justify-content: flex-start;
     }
 
     #previous-guesses {
@@ -49,5 +54,33 @@
             bottom: 0px;
             transform: rotate(180deg);
         }
+    }
+
+    .guess-finished {
+        display: flex;
+        width: 100%;
+        flex-direction: row;
+    }
+
+    .player-and-check {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        padding: 2px 8px;
+        box-sizing: border-box;
+    }
+
+    #score-board {
+        width: 100%;
+        padding-top: 8px;
+    }
+
+    .score-board-row {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-between;
     }
 }

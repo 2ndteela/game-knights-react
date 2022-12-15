@@ -1,7 +1,8 @@
-import { Input, Button, message } from 'antd'
+import { CheckOutlined } from '@ant-design/icons'
+import { Input, Button, message, Progress } from 'antd'
 import {useState, useMemo, useEffect} from 'react'
-import { checkStringForRealWord, listenForGameUpdates, markWordGuessed, setWord } from '../../../ultilites/services'
-import { createHiddenWord, getFromLocalStorage, getStoredGameData, writeToLocalStorage } from '../../../ultilites/utilities'
+import { checkStringForRealWord, listenForGameUpdates, markWordGuessed, setWord, startNextRound } from '../../../ultilites/services'
+import { createHiddenWord, getFromLocalStorage, getStoredGameData, removeFromLocalStorage, writeToLocalStorage } from '../../../ultilites/utilities'
 import './WordFightStyles.less'
 
 export default function WordFightMain() {
@@ -14,26 +15,47 @@ export default function WordFightMain() {
     const [ guessList, setGuessList ] = useState(initialList ? initialList : [])
     const [ listener, setListener ] = useState()
     const [ wordError, setWordError ] = useState(false)
+    const [ finishedGuessing, setFinishedGuessing ] = useState(false)
+    const [ progress, setProgress ] = useState(100)
+    const [ tick, setTick ] = useState(false)
 
     const view = useMemo(() => {
         if(!gameData) return 'fetching'
+        if(gameData.state === 'ended') return 'ended'
+ 
         if(playerId === gameData.picker || (!gameData.picker && playerId === 0  )) 
             if(!gameData.word) return 'picker'
             else return 'waitingOnGuess'
         if(playerId !== gameData.picker) 
-            if(!gameData.word) return 'waitOnWord'
+            if(!gameData.word) {
+                setGuess('')
+                return 'waitOnWord'
+            }
+            else if (finishedGuessing) return 'guessed'
             else return 'guessing'
 
         return 'guessing'
-    }, [gameData, playerId])
+    }, [finishedGuessing, gameData, playerId])
 
 
     useEffect(() => {
         async function f() {
             if(!listener)
                 listenForGameUpdates((data, l) => {
-                    console.log(data)
                     setGameData(data)
+
+                    if(data.players[playerId].timeStamp) setFinishedGuessing(true)
+
+                    if(data.picker === playerId) {
+                        let winners = 0
+                        data.players.forEach(p => {
+                            if(p.timeStamp) winners++
+                        })
+
+                        if(winners === data.players.length - 1) {
+                            startNextRound()
+                        }
+                    }
 
                     if(!listener) setListener(l)
                 })
@@ -55,16 +77,53 @@ export default function WordFightMain() {
         setWordError(false)
     }, [messageApi, wordError])
 
+    const barColor = useMemo(() => {
+        if (progress > 50 ) 
+            return '#177ddc' 
+
+        if (progress > 30) 
+            return '#fff44fbb' 
+
+        return '#ff0000bb'
+    }, [progress])
+
+    useEffect(() => {
+        if(!tick) 
+            setTimeout(() => setTick(true), 1000)
+        
+        else {
+            if(view === 'guessing' || view === 'waitingOnGuess') {
+                const startDate = new Date(gameData.startTime)
+                const NOW = new Date()
+                const timeDiff = (NOW - startDate) / 1000
+                const progressToSet = ((180 - timeDiff) / 180) * 100
+
+                if(progress > 0) setProgress(progressToSet)
+                else if(view === 'waitingOnGuess') {
+                    startNextRound()
+                }
+            }
+
+            setTick(false)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tick])
+
     const sortedGuesses = useMemo(() => {
         const locallyStoredList = getFromLocalStorage('ai-previousGuesses')
+
+        if(view === 'waitOnWord') {
+            removeFromLocalStorage('ai-previousGuesses')
+            return []
+        }
+
         if(!guessList && !locallyStoredList) return []
         if(locallyStoredList && !guessList) setGuessList(locallyStoredList)
 
         let copy = locallyStoredList ? [...locallyStoredList] : []
         const listToSort = (!guessList && copy) ? [...guessList] : [...copy]
         
-        if(gameData) listToSort.push(gameData.word)
-
+        if(gameData?.word) listToSort.push(gameData.word)
 
         const sorted = listToSort.sort((a, b) => {
             if(a.toLocaleLowerCase() > b.toLocaleLowerCase()) return 1 
@@ -72,10 +131,10 @@ export default function WordFightMain() {
             return 0
         })
 
-        if(gameData) sorted[sorted.indexOf(gameData.word)] = createHiddenWord(gameData.word)
+        if(gameData && sorted) sorted[sorted.indexOf(gameData.word)] = createHiddenWord(gameData.word)
 
         return sorted
-    }, [gameData, guessList])
+    }, [gameData, guessList, view])
 
     function getFailedWordMessage() {
         const picks = [
@@ -100,9 +159,9 @@ export default function WordFightMain() {
 
         if(!isWord) setWordError('error')
 
-        else if(guessList.find(g => g.toLowerCase() === guess.toLowerCase())) setWordError('repeat')
+        else if(guessList?.find(g => g.toLowerCase() === guess.toLowerCase())) setWordError('repeat')
         
-        else if(guess !== gameData.word){ 
+        else if(guess.toLowerCase() !== gameData.word.toLowerCase()) { 
             const arr = [...guessList]
             arr.push(guess)
             setGuess('')
@@ -111,17 +170,19 @@ export default function WordFightMain() {
             setGuessList(arr)
         }
 
-        else if(guess === gameData.word) {
-            let guessed = 0
-            
-            gameData.players.forEach(player => {if(player.guessed) guessed += 1})
-            markWordGuessed(guessed)
+        else if(guess.toLowerCase() === gameData.word.toLowerCase()) {
+            markWordGuessed(new Date().toISOString())
+            setFinishedGuessing(true)
+            setGuess('')
         }
     }
 
-    function setMyWord() {
-        setWord(guess)
+    async function setMyWord() {
+        const resp = await setWord(guess)
+        if(!resp) messageApi.info('There was an error setting your word. Double check the spelling, just in case.')
+        else setGuess('')
     }
+
 
     return(
         <div className="route-container" id="word-fight-container">
@@ -137,9 +198,19 @@ export default function WordFightMain() {
             )}
             {
                 view === 'waitOnWord' && (
-                    <>
-                        <h1>Waiting on word to be selected</h1>
-                    </>
+                    <div className='main-container' style={{alignItems: 'center'}} >
+                        <div style={{width: '100%'}} >Waiting on {gameData.players[gameData.picker].name} to pick a word</div>
+                        <br />
+                        <h2 style={{width: '100%', borderBottom: '1px solid white'}} >Score board</h2>
+                        <div id="score-board">
+                            {gameData.players.map(p => (
+                                <div className='score-board-row' key={p.name}>
+                                    <div>{p.name}</div> 
+                                    <div>{p.points}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )
             }
             {
@@ -156,6 +227,9 @@ export default function WordFightMain() {
                             </div>
                             <div id="bottom-fade" className='fader'></div>
                         </div>
+
+                        <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
+
                         <Input.Group compact>
                             <Input value={guess} onChange={e => setGuess(e.target.value)} style={{ width: 'calc(100% - 66px)'}} allowClear  />
                             <Button type='primary' onClick={addGuess} >Guess</Button>
@@ -165,11 +239,44 @@ export default function WordFightMain() {
             }
             {
                 view === 'waitingOnGuess' && (
-                    <div className='main-container'>
-                        <>
-                            <h1>Waiting on guesses</h1>
-                        </>
+                    <div className='main-container waiting-screen'>
+                        <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
+                        <h2 style={{width: '100%', borderBottom: '1px solid #ffffff', marginBottom: '4px'}}>Waiting on guesses</h2>
+                        {gameData.players.map((p, itr) => {
+                            if(itr === gameData.picker) return null
+                            return (
+                            <div className='player-and-check' style={{backgroundColor: itr % 2 === 1 ? '#232323': 'transparent' }} >
+                                <div>{p.name}</div>
+                               {p.timeStamp && <div style={{color: 'green', paddingLeft: '8px'}} ><CheckOutlined /></div>}
+                            </div>)
+                        })}
                     </div>
+                )
+            }
+            {
+                view === 'guessed' && (
+                    <div className='main-container guessed-screen'>
+                        <div className='guess-finished'>
+                            <h3>Great work! The word was</h3>
+                            <h3 style={{color: 'var(--primary)', paddingLeft: '4px'}} >{gameData.word}</h3>
+                        </div>
+                        <br />
+                        <br />
+                        <div style={{width: '100%', borderBottom: '1px solid #ffffff', marginBottom: '4px'}} >Other players:</div>
+                        {gameData.players.map((p, itr) => {
+                            if(itr === gameData.picker || playerId === itr) return null
+                            return (
+                            <div className='player-and-check' style={{backgroundColor: itr % 2 === 1 ? '#232323': 'transparent' }} >
+                                <div>{p.name}</div>
+                               {p.timeStamp && <div style={{color: 'green', paddingLeft: '8px'}} ><CheckOutlined /></div>}
+                            </div>)
+                        })}
+                    </div>
+                )
+            }
+            {
+                view === 'ended' && (
+                    <div>Game Over</div>
                 )
             }
         </div>
