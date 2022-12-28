@@ -55,6 +55,7 @@ export const cleanStoredData = () => {
     removeFromLocalStorage('playerId')
     removeFromLocalStorage('hsssStep')
     removeFromLocalStorage('ai-voted')
+    removeFromLocalStorage('wf-previousGuesses')
 }
 
 export const generateCode = () => {

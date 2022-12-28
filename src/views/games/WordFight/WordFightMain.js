@@ -1,14 +1,15 @@
 import { CheckOutlined } from '@ant-design/icons'
 import { Input, Button, message, Progress } from 'antd'
 import {useState, useMemo, useEffect} from 'react'
-import { checkStringForRealWord, listenForGameUpdates, markWordGuessed, setWord, startNextRound } from '../../../ultilites/services'
-import { createHiddenWord, getFromLocalStorage, getStoredGameData, removeFromLocalStorage, writeToLocalStorage } from '../../../ultilites/utilities'
+import { useNavigate } from 'react-router-dom'
+import { checkStringForRealWord, listenForGameUpdates, markWordGuessed, removeListener, setWord, startNextRound } from '../../../ultilites/services'
+import { createHiddenWord, getFromLocalStorage, getStoredGameData, removeFromLocalStorage, writeToLocalStorage, cleanStoredData } from '../../../ultilites/utilities'
 import './WordFightStyles.less'
 
 export default function WordFightMain() {
     const [messageApi, contextHolder] = message.useMessage();
     const {playerId} = getStoredGameData()
-    const initialList = getFromLocalStorage('ai-previousGuesses')
+    const initialList = getFromLocalStorage('wf-previousGuesses')
 
     const [ guess, setGuess ] = useState()
     const [ gameData, setGameData ] = useState()
@@ -18,6 +19,7 @@ export default function WordFightMain() {
     const [ finishedGuessing, setFinishedGuessing ] = useState(false)
     const [ progress, setProgress ] = useState(100)
     const [ tick, setTick ] = useState(false)
+    const navigate = useNavigate()
 
     const view = useMemo(() => {
         if(!gameData) return 'fetching'
@@ -110,10 +112,11 @@ export default function WordFightMain() {
     }, [tick])
 
     const sortedGuesses = useMemo(() => {
-        const locallyStoredList = getFromLocalStorage('ai-previousGuesses')
+        const locallyStoredList = getFromLocalStorage('wf-previousGuesses')
 
         if(view === 'waitOnWord') {
-            removeFromLocalStorage('ai-previousGuesses')
+            removeFromLocalStorage('wf-previousGuesses')
+            setFinishedGuessing(false)
             return []
         }
 
@@ -135,6 +138,19 @@ export default function WordFightMain() {
 
         return sorted
     }, [gameData, guessList, view])
+
+    const sortedPlayers = useMemo(() => {
+        if(!gameData) return []
+        const sorted = gameData.players.sort((a,b) => {
+            if(a?.points > b?.points) return -1
+
+            if(a?.name > b?.name) return -1
+
+            return 1
+        })
+
+        return sorted
+    }, [gameData])
 
     function getFailedWordMessage() {
         const picks = [
@@ -166,7 +182,7 @@ export default function WordFightMain() {
             arr.push(guess)
             setGuess('')
 
-            writeToLocalStorage('ai-previousGuesses', arr)
+            writeToLocalStorage('wf-previousGuesses', arr)
             setGuessList(arr)
         }
 
@@ -183,6 +199,11 @@ export default function WordFightMain() {
         else setGuess('')
     }
 
+    function goHome() {
+        cleanStoredData()
+        removeListener(listener)
+        navigate('/')
+    }
 
     return(
         <div className="route-container" id="word-fight-container">
@@ -199,16 +220,17 @@ export default function WordFightMain() {
             {
                 view === 'waitOnWord' && (
                     <div className='main-container' style={{alignItems: 'center'}} >
-                        <div style={{width: '100%'}} >Waiting on {gameData.players[gameData.picker].name} to pick a word</div>
+                        <div style={{width: '100%'}} >Waiting on {gameData?.players[gameData.picker]?.name ?? gameData.players[0].name} to pick a word</div>
                         <br />
                         <h2 style={{width: '100%', borderBottom: '1px solid white'}} >Score board</h2>
                         <div id="score-board">
-                            {gameData.players.map(p => (
-                                <div className='score-board-row' key={p.name}>
-                                    <div>{p.name}</div> 
-                                    <div>{p.points}</div>
-                                </div>
-                            ))}
+                            {sortedPlayers.map((p) => (
+                                    <div className='score-board-row' key={p.name}>
+                                        <div>{p.name}</div> 
+                                        <div>{p.points ?? 0}</div>
+                                    </div>
+                                )
+                            )}
                         </div>
                     </div>
                 )
@@ -243,7 +265,7 @@ export default function WordFightMain() {
                         <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
                         <h2 style={{width: '100%', borderBottom: '1px solid #ffffff', marginBottom: '4px'}}>Waiting on guesses</h2>
                         {gameData.players.map((p, itr) => {
-                            if(itr === gameData.picker) return null
+                            if(itr === gameData.picker || (itr === 0 && !gameData.picker)) return null
                             return (
                             <div className='player-and-check' style={{backgroundColor: itr % 2 === 1 ? '#232323': 'transparent' }} >
                                 <div>{p.name}</div>
@@ -264,7 +286,7 @@ export default function WordFightMain() {
                         <br />
                         <div style={{width: '100%', borderBottom: '1px solid #ffffff', marginBottom: '4px'}} >Other players:</div>
                         {gameData.players.map((p, itr) => {
-                            if(itr === gameData.picker || playerId === itr) return null
+                            if(itr === gameData.picker || playerId === itr || (itr === 0 && !gameData.picker)) return null
                             return (
                             <div className='player-and-check' style={{backgroundColor: itr % 2 === 1 ? '#232323': 'transparent' }} >
                                 <div>{p.name}</div>
@@ -276,7 +298,24 @@ export default function WordFightMain() {
             }
             {
                 view === 'ended' && (
-                    <div>Game Over</div>
+                    <div className='main-container' style={{alignItems: 'center'}}>
+                        <h1>Game Over</h1>
+                        <div>Congrats to {sortedPlayers[0].name}!</div>
+                        <br />
+                        <div id="score-board" style={{width: '300px'}} >
+                            {sortedPlayers.map((p) => (
+                                    <div className='score-board-row' key={p.name}>
+                                        <div>{p.name}</div> 
+                                        <div>{p.points ?? 0}</div>
+                                    </div>
+                                )
+                            )}
+                        </div>
+
+                        <br />
+                        <br />  
+                        <Button type='primary' onClick={goHome} >Return To Home</Button>
+                    </div>
                 )
             }
         </div>

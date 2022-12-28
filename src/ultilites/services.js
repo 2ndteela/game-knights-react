@@ -361,14 +361,14 @@ export const startNextRound = async () => {
         const {gameCode} = getStoredGameData()
         const gameData = await dbReadOnce(`/games/${gameCode}`)
         const copy = {...gameData}
+
+        if(!copy.picker) copy.picker = 0
+
         copy.picker += 1
         delete copy.word 
         delete copy.startTime
 
-        console.log('copy', copy.players)
-
         copy.players.forEach(p => {
-            console.log('p', p)
 
             let pointsToAward = 0
 
@@ -391,9 +391,7 @@ export const startNextRound = async () => {
 
         if(copy.picker > copy.players.length - 1) copy.picker = 0
 
-        console.log(copy.rounds, copy.players.length)
-
-        if(copy.rounds > copy.players.length) copy.state = 'ended'
+        if(copy.rounds > copy.players.length - 1) copy.state = 'ended'
 
         writeToDb(`games/${gameCode}`, copy)
 
