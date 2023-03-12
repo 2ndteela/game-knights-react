@@ -2,8 +2,9 @@ import { Button, Input, Radio, Tooltip, message } from "antd";
 import React, {useState, useEffect, useMemo, useCallback} from 'react'
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getNewGameCode, openLobby, startGame, joinLobby, removeGameFromDb, removeMeFromLobby, listenForGameUpdates, removeListener } from "../ultilites/services";
-import { cleanStoredData, getStoredGameData, writeNewGameData, getGameStates } from "../ultilites/utilities";
+import { cleanStoredData, getStoredGameData, writeNewGameData, getGameStates, getHSSSTutorial, getAITutorial, getWFTutorial } from "../ultilites/utilities";
 import { ShareAltOutlined } from '@ant-design/icons';
+import { TutorialDialog } from "../components/TutorialDialog/TutorialDialog";
 
 export default function JoinGame() {
     const {playerId, gameCode} = getStoredGameData()
@@ -28,14 +29,22 @@ export default function JoinGame() {
         return search.get('game')
     }, [search])
 
+    const tutorialInfo = useMemo(() => {
+        if(gameType === 'hsss') return getHSSSTutorial()
+        else if (gameType === 'ai') return getAITutorial()
+        else if (gameType === 'wf') return getWFTutorial()
+
+        return {}
+    }, [gameType])
+
     const canJoin = useMemo(() => {
-    if(gameType === 'hsss' && screenName && code) return true
-    else if (gameType === 'wf' && screenName && code) return true
-    else if(gameType === 'ai') {
-        if(host && screenName && code && pointsToWin) return true
-        else if(screenName && code) return true
-    } 
-    return false
+        if(gameType === 'hsss' && screenName && code) return true
+        else if (gameType === 'wf' && screenName && code) return true
+        else if(gameType === 'ai') {
+            if(host && screenName && code && pointsToWin) return true
+            else if(screenName && code) return true
+        } 
+        return false
     }, [gameType, screenName, code, host, pointsToWin])
 
     const startListeningForGame = useCallback(() => {
@@ -140,6 +149,7 @@ export default function JoinGame() {
 
     return (
             <div className="route-container center-up" style={{justifyContent: 'center'}}>
+
                 {!joined ? <>
                     <div style={{flexDirection: 'row', width: '100%', alignItems: 'center', paddingBottom: '16px'}}>
                         <span style={{width: '100%'}}>I am</span>
@@ -183,7 +193,8 @@ export default function JoinGame() {
                         )
                     }
 
-                    <div style={{alignItems: "flex-end", width: '100%'}}>
+                    <div style={{flexDirection: 'row', justifyContent: "space-between", width: '100%'}}>
+                        <TutorialDialog title={tutorialInfo.title} steps={tutorialInfo.steps}  />
                         <Button type="primary" onClick={joinGame} disabled={!canJoin} >{ host ? 'Open Lobby' : 'Join Game'}</Button>
                     </div>
                 </> :

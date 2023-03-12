@@ -18,3 +18,39 @@
 #game-code-container h3 {
     margin-bottom: 0px;
 }
+
+
+#home-message-container {
+    position: absolute;
+    bottom: 0px;
+    width: 100vw;
+    display: flex;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-bottom: 16px;
+    opacity: 1;
+    transition: .2s;
+    max-width: calc(100vw - 32px);
+}
+
+#home-message {
+    background-color: #323232;
+    max-width: 800px;
+    padding: 8px;
+    border-radius: 8px;
+
+    p {
+        padding-top: 0px;
+        margin-top: 0px;
+        margin-bottom: 8px;
+    }
+
+    a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+}
+
+#home-message-container.hidden-message {
+    opacity: 0;
+}

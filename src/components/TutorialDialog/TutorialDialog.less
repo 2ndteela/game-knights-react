@@ -1,0 +1,43 @@
+.slide-container {
+    height: 100%;
+
+    img {
+        width: 100%;
+    }
+}
+
+.tutorial-dots li {
+    height: 8px;
+    width: 8px;
+    border-radius: 4px;
+    background-color: #444;
+    position: absolute;
+    bottom: -48px;
+}   
+
+.tutorial-dots li.slick-active button {
+    background-color: var(--primary)!important;
+}
+
+
+@media screen and (min-width: 500px) {
+    
+
+    .ant-carousel .slick-prev,
+    .ant-carousel .slick-prev:hover,
+    .ant-carousel .slick-prev:focus {
+    font-size: inherit;
+    left: -32px;
+    z-index: 2;
+    color: var(--primary);
+    }
+
+    .ant-carousel .slick-next,
+    .ant-carousel .slick-next:hover,
+    .ant-carousel .slick-next:focus {
+    font-size: inherit;
+    right: -32px;
+    z-index: 2;
+    color: var(--primary);
+    }
+}
