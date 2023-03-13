@@ -152,7 +152,7 @@ export const getHSSSTutorial = () => {
             },
             {
                 img: two,
-                text: "After everyone has finished their prompts (there at 10), the game will mix up everyone's responses and spit out some fun stories for you all to share."
+                text: "After everyone has finished their prompts (there are 10 of them), the game will mix up everyone's responses and spit out some fun stories for you all to share."
             }
         ]
     }
