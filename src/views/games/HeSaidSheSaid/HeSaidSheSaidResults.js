@@ -38,9 +38,10 @@ export default function HsssResults() {
         }
     )
     const [ startIdx, setStartIdx ] = useState(playerId || 0)
+    const [ dataIncomplete, setDataIncomplete ] = useState(false)
+    
     useEffect(() => {
         async function f() {
-            console.log(queryId)
             const data = await getHsssGameData(queryId)
 
             if(data)
@@ -62,19 +63,25 @@ export default function HsssResults() {
     }, [])
 
     const fixedStoryArray = useMemo(() => {
-        if(storyData === errorString)
+        if(storyData === errorString && !dataIncomplete)
             return storyData
 
         const keys = Object.keys(storyData.players)
         const arr = []
 
-        keys.forEach((k, idx) => {
-            arr[idx] = storyData.players[k]
-        })
+        keys.forEach((k) => {
+            if(dataIncomplete && storyData.players[k].responses.length === 10)
+                arr.push(storyData.players[k])
+            else if(!dataIncomplete)
+                arr.push(storyData.players[k])
+        })  
 
-        return arr
+
+        if(arr.length > 1)
+            return arr
+        else return []
         
-    }, [storyData])
+    }, [dataIncomplete, storyData])
 
 
     const story = useMemo(() => {
@@ -173,7 +180,11 @@ export default function HsssResults() {
             )}
             {story.length === 0 && <div className='route-container' >
                 <h2>Oops</h2>
-                <p>It looks like one or more of your players did not log any answers, so the game could not be completed :(</p>
+                <p>
+                    It looks like one or more of your players did not log any answers, so the game could not be completed. 
+                    We can try clean the data, but some players responses may be omitted completely.
+                </p>
+                {dataIncomplete ? <h3>Data could not be reconciled :/</h3> : <Button onClick={() => setDataIncomplete(true)} >Attempt to fix data</Button>}
             </div>}
             {story === errorString && (
                 <div className='route-container' >

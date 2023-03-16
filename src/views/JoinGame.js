@@ -110,14 +110,15 @@ export default function JoinGame() {
             let playerId = 0
             if(host) openLobby(code, game, screenName, pointsToWin)
 
-            if(!host) playerId = await joinLobby(code, screenName)
+            if(!host) playerId = await joinLobby(code, screenName, game)
 
             if(playerId > -1) {
                 writeNewGameData(code, playerId)
                 startListeningForGame()
                 setJoined(true)
             }
-            else message.warning("Looks like that game does not exist :/")
+            else if(playerId === -1)  message.warning("Looks like that game does not exist :/")
+            else if(playerId === -2)  message.warning("You have a valid game code, but are trying to join the wrong game type.")
         }
     }
 

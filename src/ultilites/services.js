@@ -104,7 +104,7 @@ const cleanOldData = async () => {
         keys.forEach(k => {
             const g = games[k]
             const gameStarted = new Date(g.started)
-            if(NOW - gameStarted > ONE_WEEK)
+            if(NOW - gameStarted > ONE_WEEK || !g.started)
                 writeToDb(`/games/${k}`, null)
         })
 
@@ -157,6 +157,7 @@ export const openLobby = async (code, game, screenName, pointsToWin) => {
         if(!pointsToWin) return
 
         gameData.pointsToWin = pointsToWin
+        gameData.players[0].id = 0
     }
 
     writeToDb(`games/${code}`, gameData)
@@ -170,20 +171,24 @@ export const startGame = async (starter) => {
         writeToDb(`games/${gameCode}/picker`, starter)
 }
 
-export const joinLobby = async (code, player) => {
+export const joinLobby = async (code, player, game) => {
     try {
         const data = await dbReadOnce(`games/${code}`)
         if(data) {
-            const playerCount = Object.keys(data.players).length
-            writeToDb(`games/${code}/players/${playerCount}/name`, player)
 
-            return playerCount
+            if(data.game !== game) return -2
+
+            else {
+                const playerCount = Object.keys(data.players).length
+                writeToDb(`games/${code}/players/${playerCount}`, {name: player, id: playerCount})
+                return playerCount
+            }
         }
         else return -1
     }
     catch(error) {
         console.error(error)
-        return false
+        return -1
     }
 }
 
@@ -257,7 +262,6 @@ export const awardPoint = async (playerId) => {
     try {
         const {gameCode} = getStoredGameData()
         const points = await dbReadOnce(`games/${gameCode}/players/${playerId}/points`)
-        console.log(points)
         await writeToDb(`games/${gameCode}/players/${playerId}/points`, points ? points + 1 : 1)
         await writeToDb(`games/${gameCode}/recentWinner`, playerId)
         return true

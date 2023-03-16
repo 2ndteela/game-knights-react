@@ -37,6 +37,7 @@ export default function AnswerIsMain() {
     
 
     const view = useMemo(() => {
+        console.log(gameData, playerId)
         const isPicker = playerId === gameData?.picker
 
         if(!gameData) return 'loading'
@@ -89,7 +90,7 @@ export default function AnswerIsMain() {
                         setProgress(100)
                         setTick(false)
                     }
-          
+
                     setGameData(data)
                 }
     
@@ -244,10 +245,10 @@ export default function AnswerIsMain() {
                     <div style={{justifyContent: 'flex-start', width: '100%', height: '100%'}} > 
                         <h1>Answer: {gameData.answer}</h1>
                         <span style={{paddingBottom: '8px', paddingTop: '36px'}} >Pick the question that you like best for your answer:</span>
-                        {gameData.players.map((p, itr) => {
+                        {gameData.players.map((p) => {
                             if(p.question) return (
-                                <div style={{paddingBottom: '8px', width: '100%'}} >
-                                    <Button style={{width: '100%', backgroundColor: '#434343'}} onClick={() => pickWinner(itr)} >{p.question}</Button>
+                                <div style={{paddingBottom: '8px', width: '100%'}} key={p.id} >
+                                    <Button style={{width: '100%', backgroundColor: '#434343'}} onClick={() => pickWinner(p.id)} >{p.question}</Button>
                                 </div>
                             )
                             return null

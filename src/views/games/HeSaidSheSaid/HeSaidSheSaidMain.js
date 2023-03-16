@@ -4,6 +4,7 @@ import { checkForEndOfHsssGame, listenForGameState, removeListener, saveHsssResp
 import { writeToLocalStorage, getFromLocalStorage, getGameStates } from "../../../ultilites/utilities";
 import { useNavigate } from "react-router-dom";
 import './he-said-she-said-styles.less'
+import loadingSvg from '../../../assets/photos/loading.svg'
 
 const prompts = [
     {
@@ -128,8 +129,12 @@ export default function HeSaidSheSaidMain() {
     return(
         <div className="route-container" id="hsss-main-wrapper">
             { step > 9 && (
-                <div>
-                    <h2>Waiting on your friends</h2>
+                <div style={{width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center'}} >
+                    <img src={loadingSvg} alt="loading gif" />
+                    <h2 style={{paddingBottom: '4px'}} >Waiting on your friends</h2>
+                    <div>The app will automatically take you to the results page when all your friends are finished answering the prompts</div>
+                    <br />
+                    <Button danger onClick={() => navigate('/hsss-results')} >Go to results without waiting</Button>
                 </div>
             )}
             { step <= 9 && (

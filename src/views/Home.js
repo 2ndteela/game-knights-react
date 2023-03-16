@@ -2,6 +2,7 @@ import { Button } from "antd";
 import {useNavigate} from 'react-router-dom'
 import './view-styles.less'
 import React, {useState} from 'react'
+import { TutorialDialog } from "../components/TutorialDialog/TutorialDialog";
 
 export default function Home() {
     const navigate = useNavigate()
@@ -15,6 +16,9 @@ export default function Home() {
 
     return(
             <div id="home-container" className="route-container center-up">
+                <div style={{flexDirection: 'row', width: '100%', paddingBottom: '16px', justifyContent: 'flex-end'}} >
+                    <TutorialDialog />
+                </div>
                 <Button 
                     block
                     onClick={() => goToGame('hsss')} 
