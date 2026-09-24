@@ -1,4 +1,4 @@
-import { Button, Input, Progress } from 'antd'
+import { Button, Input, Progress, Space } from 'antd'
 import React, {useState, useMemo, useEffect} from 'react'
 import { 
     awardPoint, 
@@ -8,23 +8,25 @@ import {
     setGameState, 
     setQuestionForUser, 
     voteToContinue 
-} from '../../../ultilites/services'
+} from '../../../utilities/services'
 import { getFromLocalStorage,
     getGameStates, 
     getStoredGameData, 
     makeRandomAIAnswer, 
     whoAmIWaitingOn, 
     writeToLocalStorage 
-} from '../../../ultilites/utilities'
+} from '../../../utilities/utilities'
 import { ArrowRightOutlined } from '@ant-design/icons'
 import './AnswerIsStyles.less'
-import { useNavigate } from 'react-router-dom'
+import { useGoHome } from '../../../hooks/useGoHome'
+
+// Hoisted so the object identity is stable; getGameStates() returns a new object
+// per call, which made every hook depending on it re-run on every render.
+const gameStates = getGameStates('ai')
 
 export default function AnswerIsMain() {
-    const gameStates = getGameStates('ai')
     const {playerId} = getStoredGameData()
     const {TextArea} = Input
-    const navigate = useNavigate()
 
     const [ gameData, setGameData ] = useState()
     const [ response, setResponse ] = useState()
@@ -34,10 +36,11 @@ export default function AnswerIsMain() {
     const [ progress, setProgress ] = useState(100)
     const [ tick, setTick ] = useState(false)
     const [ votedToContinue, setVotedToContinue ] = useState(false)
-    
+
+    const goHome = useGoHome(listener)
+
 
     const view = useMemo(() => {
-        console.log(gameData, playerId)
         const isPicker = playerId === gameData?.picker
 
         if(!gameData) return 'loading'
@@ -56,7 +59,7 @@ export default function AnswerIsMain() {
             return 'waitingInPick'
         }
         return 'results'
-    }, [gameData, gameStates, playerId, responded])
+    }, [gameData, playerId, responded])
 
     useEffect(() => {
         async function f() {
@@ -71,7 +74,7 @@ export default function AnswerIsMain() {
                     
                     if(!listener) setListener(l)
 
-                    if(gameStates.writingQuestions && data.players[playerId].question)
+                    if(gameStates.writingQuestions && data.players?.[playerId]?.question)
                         setResponded(true)
 
                     if(gameStates.results && voted) setVotedToContinue(true)
@@ -97,7 +100,7 @@ export default function AnswerIsMain() {
             })
         }
         if(!listener) f()
-    }, [gameData, gameStates, listener, playerId, responded, waitingList])
+    }, [gameData, listener, playerId, responded, waitingList])
 
     async function setAnswer() {
         const resp = await setAnswerForRound(response || '-')
@@ -135,26 +138,26 @@ export default function AnswerIsMain() {
 
     useEffect(() => {
         if(!tick) {
-            setTimeout(() => setTick(true), 1000)
+            const timer = setTimeout(() => setTick(true), 1000)
+            return () => clearTimeout(timer)
         }
-        
-        else {
-            if(progress > 0) {
-                setProgress(progress - 2)
-                setTick(false)
-            }
-            else {
-                if(view === 'answering') {
-                    setResponse(makeRandomAIAnswer())
-                    setAnswer()
-                }
 
-                else if(view === 'questions') {
-                    setResponse('-')
-                    setQuestion()
-                }
+        if(progress > 0) {
+            setProgress(progress - 2)
+            setTick(false)
+        }
+        else {
+            if(view === 'answering') {
+                setResponse(makeRandomAIAnswer())
+                setAnswer()
+            }
+
+            else if(view === 'questions') {
+                setResponse('-')
+                setQuestion()
             }
         }
+        return undefined
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tick])
 
@@ -168,23 +171,27 @@ export default function AnswerIsMain() {
         return '#ff0000bb'
     }, [progress])
 
+    // Sorts a copy, and carries each player's position in the original array
+    // along as `idx`. gameData.players comes straight from Firebase and the rest
+    // of the game keys players by that position, so sorting it in place used to
+    // detach names from their picker/winner/response.
     const sortedPlayers = useMemo(() => {
-        if(!gameData) return []
-        if(!gameData.players) return []
-        
-        const sorted =  gameData.players.sort((a, b) => {
-            if(a.points && !b.points) return -1
-            else if (!a.points && b.points) return 1
-            else if (a.points > b.points) return -1
-            else if (a.points < b.points) return 1
-            return 0
-        })
-        return sorted
+        if(!gameData?.players) return []
+
+        return gameData.players
+            .map((p, idx) => ({...p, idx}))
+            .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
     }, [gameData])
 
     const winner = useMemo(() => {
-        if(!gameData) return null
-        return gameData.players.find(p => p.points === gameData.pointsToWin)
+        if(!gameData?.players) return null
+
+        // pointsToWin arrives from an input, so compare numerically and treat
+        // overshooting the target as a win too.
+        const target = Number(gameData.pointsToWin)
+        if(!target) return null
+
+        return gameData.players.find(p => (p.points ?? 0) >= target)
     }, [gameData])
 
     async function voteToGoToNextRound() {
@@ -193,27 +200,23 @@ export default function AnswerIsMain() {
         if(voted) setVotedToContinue(true)
     }
 
-    function goHome() {
-        navigate('/')
-    }
-
     return (
         <div className='route-container' id="answer-is-responses">
             {view === 'answering' && (
                 <>
-                    <span style={{paddingBottom: '4px'}} >What is your answer?</span>
-                    <Input.Group compact>
-                        <Input value={response} onChange={e => setResponse(e.target.value)} style={{ width: 'calc(100% - 74px)' }} />
+                    <span className="pad-bottom-4" >What is your answer?</span>
+                    <Space.Compact className="full-width">
+                        <Input value={response} onChange={e => setResponse(e.target.value)} className="answer-input" />
                         <Button type="primary" onClick={setAnswer}>Submit</Button>
-                    </Input.Group>
+                    </Space.Compact>
                     <br />
-                    <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
+                    <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} railColor="#434343" />
                 </>
             )}
             {
                 view === 'waitingOnAnswer' && (
                     <div className='waiting-div'>
-                        <h1 style={{width: '100%', textAlign: 'center'}}>Waiting on the Answer</h1>
+                        <h1>Waiting on the Answer</h1>
                         <span>(Aren't we all though?)</span>
                     </div>
                 )
@@ -222,33 +225,37 @@ export default function AnswerIsMain() {
                 view === 'questions' && (
                     <>
                         <span>The Answer is <b>{gameData?.answer ? gameData.answer : "Answer has failed"}</b></span>
-                        <div style={{height: '8px'}}></div>
+                        <div className="spacer-8"></div>
                         <span>What's the Question?</span>
-                        <div style={{height: '4px'}}></div>
+                        <div className="spacer-4"></div>
                         <TextArea value={response} onChange={e => setResponse(e.target.value)} />
-                        <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} trailColor="#434343" />
-                        <div style={{height: '8px'}}></div>
-                        <div style={{display: 'flex', alignItems: 'flex-end', width: '100%'}} ><Button type="primary" onClick={setQuestion}>Submit</Button></div>
+                        <Progress percent={progress} showInfo={false} strokeLinecap="square" strokeColor={barColor} railColor="#434343" />
+                        <div className="spacer-8"></div>
+                        <div className="bottom-action-row" ><Button type="primary" onClick={setQuestion}>Submit</Button></div>
                     </>
                 )
             }
             {
                 view === 'waitingOnQuestions' && (
                     <div className='waiting-div' >
-                        <span style={{paddingBottom: '8px'}} >Waiting on the Questions from</span>
-                        <div>{waitingList.map(p => <h3>{p}</h3>)}</div>
+                        <span className="pad-bottom-8" >Waiting on the Questions from</span>
+                        <div>{waitingList.map(p => <h3 key={p}>{p}</h3>)}</div>
                     </div>
                 )
             }
             {
                 view === 'pick' && (
-                    <div style={{justifyContent: 'flex-start', width: '100%', height: '100%'}} > 
+                    <div className="pick-list" > 
                         <h1>Answer: {gameData.answer}</h1>
-                        <span style={{paddingBottom: '8px', paddingTop: '36px'}} >Pick the question that you like best for your answer:</span>
-                        {gameData.players.map((p) => {
+                        <span className="pick-prompt" >Pick the question that you like best for your answer:</span>
+                        {gameData.players.map((p, itr) => {
+                            // Fall back to the array position: that is the key the
+                            // database writes points under, and hsss/wf lobbies
+                            // never stamped an explicit id on the host.
+                            const id = p.id ?? itr
                             if(p.question) return (
-                                <div style={{paddingBottom: '8px', width: '100%'}} key={p.id} >
-                                    <Button style={{width: '100%', backgroundColor: '#434343'}} onClick={() => pickWinner(p.id)} >{p.question}</Button>
+                                <div className="pick-option" key={id} >
+                                    <Button className="pick-button" onClick={() => pickWinner(id)} >{p.question}</Button>
                                 </div>
                             )
                             return null
@@ -259,10 +266,10 @@ export default function AnswerIsMain() {
             {
                 view === 'waitingInPick' && (
                     <div className='waiting-on-pick'>
-                        <h3 className='you-answered' >You answered <b>{gameData.players[playerId].question}</b></h3>
-                        <div style={{paddingBottom: '8px'}} >Here is what everyone else answered: </div>
+                        <h3 className='you-answered' >You answered <b>{gameData.players?.[playerId]?.question}</b></h3>
+                        <div className="pad-bottom-8" >Here is what everyone else answered: </div>
                         {gameData.players.map((p, itr) => {
-                                if(p.question && itr !== playerId ) return <div className='answer-from-other'>{p.question}</div>
+                                if(p.question && itr !== playerId ) return <div className='answer-from-other' key={p.id ?? itr}>{p.question}</div>
                                 return null
                             })  }
                     </div>
@@ -271,15 +278,17 @@ export default function AnswerIsMain() {
             {
                 view === 'results' && !winner && (
                     <div id="leader-board">
-                        <div style={{width: '100%'}} >
+                        <div className="full-width" >
                             <div id="results-header">
                                 <h1>Leader Board</h1>
                                 <h3>Game to: {gameData.pointsToWin}</h3>
                             </div>
-                            {sortedPlayers.map((p, itr) => {
-                                if(p.points) return <h3 style={{ color: itr === gameData?.recentWinner ? 'deepskyblue': 'white'}} >{p.name}: {p.points}</h3>
-                                return <h3>{p.name}: 0</h3>
-                            })}
+                            {sortedPlayers.map(p => (
+                                <h3
+                                    key={p.idx}
+                                    className={p.idx === gameData?.recentWinner ? 'player-score recent-winner' : 'player-score'}
+                                >{p.name}: {p.points ?? 0}</h3>
+                            ))}
                         </div>
                         <Button
                             type='primary'
@@ -294,8 +303,8 @@ export default function AnswerIsMain() {
                 )   
             }
             {view === 'results' && winner && (
-                <div style={{width: '100%', alignItems: 'center'}} >
-                    <h1 style={{width: '100%', textAlign: 'center', color: 'deepskyblue' }} >{winner.name} Wins!</h1>
+                <div className="winner-banner" >
+                    <h1 className="winner-name" >{winner.name} Wins!</h1>
                     <br />
                     <Button onClick={goHome} size="large" >Return to Home</Button>
                 </div>

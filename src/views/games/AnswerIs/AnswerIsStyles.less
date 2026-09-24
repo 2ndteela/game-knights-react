@@ -57,9 +57,55 @@
 
         border-bottom: 1px solid white;
         width: 100%;
-        flex-direction: row; 
+        flex-direction: row;
         justify-content: space-between;
         align-items: flex-end;
         margin-bottom: 8px;
+    }
+
+    // Leaves room for the Submit button sitting next to it in the compact group.
+    .answer-input {
+        width: calc(100% - 74px);
+    }
+
+    .pick-list {
+        justify-content: flex-start;
+        width: 100%;
+        height: 100%;
+    }
+
+    .pick-prompt {
+        padding-bottom: 8px;
+        padding-top: 36px;
+    }
+
+    .pick-option {
+        padding-bottom: 8px;
+        width: 100%;
+    }
+
+    .pick-button {
+        width: 100%;
+        background-color: #434343;
+    }
+
+    .player-score {
+        color: white;
+    }
+
+    // Whoever took the last round, so the change in the standings is easy to spot.
+    .player-score.recent-winner {
+        color: deepskyblue;
+    }
+
+    .winner-banner {
+        width: 100%;
+        align-items: center;
+    }
+
+    .winner-name {
+        width: 100%;
+        text-align: center;
+        color: deepskyblue;
     }
 }

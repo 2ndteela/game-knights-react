@@ -33,6 +33,12 @@ header {
     margin-top: 0;
   }
 
+  // Holds the header's height steady on the home page, where there is no
+  // exit button to fill it.
+  .exit-slot {
+    min-height: 32px;
+  }
+
 }
 
 div, a, span, button {
@@ -58,4 +64,12 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
+}
+
+// The blanket rule above column-stacks every descendant div. antd used to
+// render compact groups as a span, so they escaped it; since v6 they are divs
+// and the input would sit on top of its own button. Let antd lay these out.
+#router-container .ant-space-compact {
+  flex-direction: row;
+  align-items: stretch;
 }

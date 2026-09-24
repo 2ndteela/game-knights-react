@@ -1,3 +1,13 @@
+import hsss1 from '../assets/photos/hsss-1.png'
+import hsss2 from '../assets/photos/hsss-2.png'
+import ai1 from '../assets/photos/ai-1.png'
+import ai2 from '../assets/photos/ai-2.png'
+import ai3 from '../assets/photos/ai-3.png'
+import ai4 from '../assets/photos/ai-4.png'
+import wf1 from '../assets/photos/wf-1.png'
+import wf2 from '../assets/photos/wf-2.png'
+import wf3 from '../assets/photos/wf-3.png'
+
 export const getGameStates = gameType => {
     const baseStates = {
         lobby: 'lobby',
@@ -58,15 +68,40 @@ export const cleanStoredData = () => {
     removeFromLocalStorage('wf-previousGuesses')
 }
 
-export const generateCode = () => {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const CODE_SPACE = 26 ** 6   // 308,915,776 six-letter codes
+const SCRAMBLE = 16_777_213  // odd and not a multiple of 13, so coprime with 26^6
+
+// Game codes only need to be unique, not unguessable, so they are derived from
+// the creation time rather than drawn at random and checked against the
+// database.
+//
+// Multiplying before encoding is reversible (SCRAMBLE is coprime with
+// CODE_SPACE), so two games can only share a code if they were created on the
+// same millisecond -- but it also spreads consecutive milliseconds right across
+// the space, so games started moments apart do not get lookalike codes that
+// players could mistype into each other's lobbies. Encoding the timestamp
+// directly would leave the leading letters frozen for days at a time.
+//
+// The space wraps every CODE_SPACE ms, which is 3.575 days, so a collision also
+// needs the two creation times to be exactly that far apart.
+export const generateCode = (createdAt = Date.now()) => {
+    let n = (createdAt % CODE_SPACE) * SCRAMBLE % CODE_SPACE
     let code = ''
 
-    for(let i = 0; i < 6; i++)
-        code += letters[Math.floor(Math.random() * 26)]
+    for(let i = 0; i < 6; i++) {
+        code = LETTERS[n % 26] + code
+        n = Math.floor(n / 26)
+    }
 
     return code
 }
+
+// Shared by the lobby and the story picker, which both hand out invites while
+// the game is still open: two copies of this would drift and send friends to a
+// game that does not exist.
+export const getInviteLink = (code, game) =>
+    `https://gameknights.web.app/join-game?gameCode=${code}&game=${game}`
 
 export const whoAmIWaitingOn = (gameData) => {
     try {
@@ -98,7 +133,7 @@ export const makeRandomAIAnswer = () => {
         'The Queen (RIP)',
         'Adam and Eve',
         'The Office',
-        'Micheal Scott',
+        'Michael Scott',
         'Mike Tyson',
         'Tom Cruise',
         'Your Boss',
@@ -107,7 +142,7 @@ export const makeRandomAIAnswer = () => {
         'No',
         'Coffee',
         'Santa',
-        'The Dahla Lama',
+        'The Dalai Lama',
         'Cbat',
         'Fire',
         'Champagne',
@@ -136,9 +171,8 @@ export const createHiddenWord = (word) => {
 }
 
 export const getHSSSTutorial = () => {
-    const one = require('../assets/photos/hsss-1.png')
-    const two = require('../assets/photos/hsss-2.png')
-
+    const one = hsss1
+    const two = hsss2
 
     return {
         title: 'He Said She Said',
@@ -148,28 +182,28 @@ export const getHSSSTutorial = () => {
             },
             {
                 img: one,
-                text: "You're going to get some prompts, just answer them whatever way you feel is best. Celebrities, people in the room, catch phrases and just about anything you can think of are all free game."
+                text: "You're going to get some prompts, just answer them whatever way you feel is best. Celebrities, people in the room, catchphrases and just about anything you can think of are all fair game."
             },
             {
                 img: two,
-                text: "After everyone has finished their prompts (there are 10 of them), the game will mix up everyone's responses and spit out some fun stories for you all to share."
+                text: "After everyone has finished their prompts (10 of them, unless your host wrote their own set), the game will mix up everyone's responses and spit out some fun stories for you all to share."
             }
         ]
     }
 }
 
 export const getAITutorial = () => {
-    const one = require('../assets/photos/ai-1.png')
-    const two = require('../assets/photos/ai-2.png')
-    const three = require('../assets/photos/ai-3.png')
-    const four = require('../assets/photos/ai-4.png')
+    const one = ai1
+    const two = ai2
+    const three = ai3
+    const four = ai4
 
     return {
         title: 'Answer Is',
         steps: [
             {
                 img: one,
-                text: "Answer Is is all about twisting your friends words against them. First, one person will give a random answer. It can be a number, a word, a whole sentence or anything really."
+                text: "Answer Is is all about twisting your friends' words against them. First, one person will give a random answer. It can be a number, a word, a whole sentence or anything really."
             },
             {
                 img: two,
@@ -188,16 +222,16 @@ export const getAITutorial = () => {
 }
 
 export const getWFTutorial = () => {
-    const one = require('../assets/photos/wf-1.png')
-    const two = require('../assets/photos/wf-2.png')
-    const three = require('../assets/photos/wf-3.png')
+    const one = wf1
+    const two = wf2
+    const three = wf3
 
     return {
         title: 'Word Fight',
         steps: [
             {
                 img: one,
-                text: 'Word Fight is a bit like competitive hangman. One person will pick a word to start a round. It can be any english word.'
+                text: 'Word Fight is a bit like competitive hangman. One person will pick a word to start a round. It can be any English word.'
             },
             {
                 img: two,

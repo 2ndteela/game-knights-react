@@ -1,22 +1,18 @@
 import React, { useMemo } from "react"
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom"
+import { useLocation, useSearchParams } from "react-router-dom"
 import {Button} from 'antd'
 import { LogoutOutlined } from "@ant-design/icons"
-import { cleanStoredData } from "../../ultilites/utilities"
+import { useGoHome } from "../../hooks/useGoHome"
 
 export default function SiteHeader() {
-    const navigate = useNavigate()
     const location = useLocation()
     const [search] = useSearchParams()
-
-    function exitGame() {
-        cleanStoredData()
-        navigate('/')
-    }
+    const goHome = useGoHome()
 
     const title = useMemo(() => {
         if(search.get('game') === 'hsss' || location.pathname.includes('hsss')) return 'He Said She Said'
-        if(search.get('game') === 'ai' || location.pathname.includes('ai')) return 'Answer Is'
+        if(search.get('game') === 'ai' || location.pathname === '/ai') return 'Answer Is'
+        if(search.get('game') === 'wf' || location.pathname === '/wf') return 'Word Fight'
         return 'Game Knights'
     }, [location, search])
 
@@ -28,12 +24,12 @@ export default function SiteHeader() {
     return (      
         <header>
             <h3>{title}</h3>
-            <div style={{minHeight: '32px'}} >
+            <div className="exit-slot" >
             { showExit && <Button 
                 icon={<LogoutOutlined />} 
                 shape="circle" 
                 type='text' 
-                onClick={exitGame}
+                onClick={goHome}
                 ></Button>}
             </div>
         </header>

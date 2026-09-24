@@ -10,15 +10,60 @@
     align-items: center !important;
 }
 
-#game-code-container h2 {
-    color: var(--primary);
-    margin-bottom: 2px;
+#home-container {
+    .tutorial-row {
+        flex-direction: row;
+        width: 100%;
+        padding-bottom: 16px;
+        justify-content: flex-end;
+    }
+
+    .game-button {
+        background-color: #323232;
+        border-color: #323232;
+    }
 }
 
-#game-code-container h3 {
-    margin-bottom: 0px;
-}
+.route-container#join-game-container {
+    justify-content: center;
 
+    .player-type-row {
+        flex-direction: row;
+        width: 100%;
+        align-items: center;
+        padding-bottom: 16px;
+    }
+
+    .field-label {
+        width: 100%;
+        padding-bottom: 2px;
+    }
+
+    // Leaves room for the share button sitting next to it in the compact group.
+    .code-input {
+        width: calc(100% - 40px);
+    }
+
+    .actions-row {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .lobby-actions {
+        flex-direction: row;
+        width: 200px;
+    }
+
+    .lobby-start {
+        padding-top: 8px;
+        width: 200px;
+    }
+
+    .start-button {
+        width: 200px;
+    }
+}
 
 #home-message-container {
     position: absolute;
@@ -53,4 +98,7 @@
 
 #home-message-container.hidden-message {
     opacity: 0;
+    // The container is absolutely positioned across the bottom of the screen, so
+    // without this it keeps swallowing taps meant for the game buttons.
+    pointer-events: none;
 }
