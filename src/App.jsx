@@ -1,11 +1,13 @@
 import './App.less';
+import './styles/shared.less';
 import React from 'react' 
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import Home from './views/Home'
 import JoinGame from './views/JoinGame';
 import HeSaidSheSaidMain from './views/games/HeSaidSheSaid/HeSaidSheSaidMain';
 import HeSaidSheSaidResults from './views/games/HeSaidSheSaid/HeSaidSheSaidResults'
-import './ultilites/firebase.js'
+import HeSaidSheSaidCreate from './views/games/HeSaidSheSaid/HeSaidSheSaidCreate'
+import './utilities/firebase.js'
 import SiteHeader from './components/Header/SiteHeader';
 import AnswerIsMain from './views/games/AnswerIs/AnswerIsMain';
 import WordFightMain from './views/games/WordFight/WordFightMain';
@@ -20,7 +22,7 @@ function App() {
     theme={{
       algorithm: [darkAlgorithm],
       token: {
-        primaryColor: '#00b96b',
+        colorPrimary: '#177ddc',
       },
     }}
     >
@@ -34,6 +36,7 @@ function App() {
               
               {/* He Said She Said routes */}
               <Route path='/hsss' element={<HeSaidSheSaidMain />} />
+              <Route path='/hsss-create' element={<HeSaidSheSaidCreate />} />
               <Route path='/hsss-results' element={<HeSaidSheSaidResults />} />
 
               {/* Answer Is routes */}

@@ -1,8 +1,8 @@
-import { Button, Input, Radio, Tooltip, message } from "antd";
+import { Button, Input, InputNumber, Radio, Space, Tooltip, message } from "antd";
 import React, {useState, useEffect, useMemo, useCallback} from 'react'
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { getNewGameCode, openLobby, startGame, joinLobby, removeGameFromDb, removeMeFromLobby, listenForGameUpdates, removeListener } from "../ultilites/services";
-import { cleanStoredData, getStoredGameData, writeNewGameData, getGameStates, getHSSSTutorial, getAITutorial, getWFTutorial } from "../ultilites/utilities";
+import { openLobby, startGame, joinLobby, removeGameFromDb, removeMeFromLobby, listenForGameUpdates, removeListener } from "../utilities/services";
+import { cleanStoredData, generateCode, getStoredGameData, writeNewGameData, getGameStates, getInviteLink, getHSSSTutorial, getAITutorial, getWFTutorial } from "../utilities/utilities";
 import { ShareAltOutlined } from '@ant-design/icons';
 import { TutorialDialog } from "../components/TutorialDialog/TutorialDialog";
 
@@ -14,7 +14,9 @@ export default function JoinGame() {
     const [ playerType, setPlayerType ] = useState('join')
     const [ joined, setJoined ] = useState(false)
     const [ peopleInLobby, setPeopleInLobby ] = useState(1)
-    const [ newCode, setNewCode ] = useState()
+    // Derived from the creation time, so a host's code is ready immediately with
+    // no database round trip to prove it is free.
+    const [ newCode, setNewCode ] = useState(generateCode)
     const [ gameData, setGameData ] = useState()
     const [ lobbyListener, setLobbyListener ] = useState(null)
     
@@ -56,44 +58,34 @@ export default function JoinGame() {
     }, [code])
 
     useEffect(() => {
-        if(!gameData) cleanStoredData()
-
-        else if(gameData) {
-            const game = search.get('game')
-            const gameStates = getGameStates(game) 
-
-            if(gameData.state !== gameStates.lobby) {
-                removeListener(lobbyListener)
-                navigate(`/${game}`)
-            }
-
-            else if(gameData.state === gameStates.ended) {
-                cleanStoredData()
-
-            }
-
-            else if(gameData.players?.length) setPeopleInLobby(gameData.players.length)
+        if(!gameData) {
+            cleanStoredData()
+            return
         }
 
-        else {
+        const game = search.get('game')
+        const gameStates = getGameStates(game)
 
-            if(code && !lobbyListener) 
-                startListeningForGame()
-            else
-                setJoined(false)
+        // Checked before the generic "not in the lobby any more" case below,
+        // which would otherwise always win and send players into a dead game.
+        if(gameData.state === gameStates.ended) {
+            cleanStoredData()
+            setJoined(false)
+            return
         }
-    }, [code, gameData, lobbyListener, navigate, search, startListeningForGame])
+
+        if(gameData.state !== gameStates.lobby) {
+            removeListener(lobbyListener)
+            navigate(`/${game}`)
+            return
+        }
+
+        if(gameData.players?.length) setPeopleInLobby(gameData.players.length)
+    }, [gameData, lobbyListener, navigate, search])
 
     useEffect(() => {
-        if(host) {
-            if(!newCode)
-                getNewGameCode().then(data => {
-                    setNewCode(data)
-                })
-            else setCode(newCode)
-        }
-        else if (search.get('gameCode')) setCode(search.get('gameCode'))
-        else setCode('')
+        if(host) setCode(newCode)
+        else setCode(search.get('gameCode') || '')
     }, [host, newCode, search])
 
     const radioOptions = [
@@ -105,7 +97,7 @@ export default function JoinGame() {
         const game = search.get('game')
         cleanStoredData()
 
-        if(!game) message.warning("What type of game are your joining? Try going back to the home page and selecting your game again")
+        if(!game) message.warning("What type of game are you joining? Try going back to the home page and selecting your game again")
         else {
             let playerId = 0
             if(host) openLobby(code, game, screenName, pointsToWin)
@@ -124,14 +116,15 @@ export default function JoinGame() {
 
     function copySharableAddress() {
         const game = search.get('game')
-        navigator.clipboard.writeText(`https://gameknights.web.app/join-game?gameCode=${code}&game=${game}`);
-        message.info('Address copied to clip board')
+        navigator.clipboard.writeText(getInviteLink(code, game));
+        message.info('Address copied to clipboard')
     }
 
     function leaveGame() {
         if(host) {
             removeGameFromDb(code)
-            setNewCode('')
+            // Closing a lobby retires its code, so the next one gets a fresh one.
+            setNewCode(generateCode())
         }
 
         else
@@ -144,57 +137,72 @@ export default function JoinGame() {
 
     function beginGame() {
         const game = search.get('game')
-        const starter = game === 'hsss' ? null : Math.floor(Math.random() * peopleInLobby)
-        startGame(starter)
+
+        // He Said She Said is started from its story screen instead, where the
+        // host picks the prompts: starting here would send everyone else to
+        // their first prompt before the host had chosen it.
+        if(game === 'hsss') {
+            if(lobbyListener) removeListener(lobbyListener)
+            navigate('/hsss-create')
+            return
+        }
+
+        startGame(Math.floor(Math.random() * peopleInLobby))
     }
 
     return (
-            <div className="route-container center-up" style={{justifyContent: 'center'}}>
+            <div className="route-container center-up" id="join-game-container">
 
                 {!joined ? <>
-                    <div style={{flexDirection: 'row', width: '100%', alignItems: 'center', paddingBottom: '16px'}}>
-                        <span style={{width: '100%'}}>I am</span>
+                    <div className="player-type-row">
+                        <span className="full-width">I am</span>
                         <Radio.Group 
                             options={radioOptions} 
                             value={playerType} 
                             onChange={e => setPlayerType(e.target.value)} 
                             optionType='button' 
                             buttonStyle="solid" 
-                            style={{flexDirection: 'row'}}
+                            className="radio-row"
                             defaultValue="join" 
                         />
                     </div>
                     <br/>
-                    <span style={{width: '100%', paddingBottom: '2px' }}>Game Code</span>
-                    <Input.Group compact>
-                        <Input 
-                            size="large" 
-                            value={code} 
-                            onChange={e => setCode(e.target.value.toUpperCase())} 
-                            disabled={host} 
-                            style={{width: 'calc(100% - 40px)'}} 
+                    <span className="field-label">Game Code</span>
+                    <Space.Compact className="full-width">
+                        <Input
+                            size="large"
+                            value={code}
+                            onChange={e => setCode(e.target.value.toUpperCase())}
+                            disabled={host}
+                            className="code-input"
                             maxLength={6}
                         />
-                        <Tooltip>
-                            <Button icon={<ShareAltOutlined /> } size='large' onClick={copySharableAddress} />
+                        <Tooltip title="Copy invite link">
+                            <Button icon={<ShareAltOutlined /> } size='large' aria-label="Copy invite link" onClick={copySharableAddress} />
                         </Tooltip>
-                    </Input.Group>
+                    </Space.Compact>
                     <br/>
-                        <span style={{width: '100%', paddingBottom: '2px' }}>Screen Name</span>
+                        <span className="field-label">Screen Name</span>
                         <Input size="large" value={screenName} onChange={e => setScreenName(e.target.value)} />
                     <br/>
 
                     {
                         gameType === 'ai' && host && (
                             <>
-                                <span style={{width: '100%', paddingBottom: '2px'}}>Points to win</span>
-                                <Input size="large" value={pointsToWin} onChange={e => setPointsToWin(e.target.value)} />
+                                <span className="field-label">Points to win</span>
+                                <InputNumber
+                                    size="large"
+                                    min={1}
+                                    value={pointsToWin}
+                                    onChange={setPointsToWin}
+                                    className="full-width"
+                                />
                                 <br />
                             </>
                         )
                     }
 
-                    <div style={{flexDirection: 'row', justifyContent: "space-between", width: '100%'}}>
+                    <div className="actions-row">
                         <TutorialDialog title={tutorialInfo.title} steps={tutorialInfo.steps}  />
                         <Button type="primary" onClick={joinGame} disabled={!canJoin} >{ host ? 'Open Lobby' : 'Join Game'}</Button>
                     </div>
@@ -209,17 +217,17 @@ export default function JoinGame() {
                         </>)
 
                     }
-                    <h2 style={{color: 'var(--primary)'}} >{code}</h2>
-                    <div>{peopleInLobby} people in Lobby</div>
+                    <h2 className="lobby-code" >{code}</h2>
+                    <div>{peopleInLobby} people in lobby</div>
                     <br/>
-                    <div style={{flexDirection: 'row', width: '200px'}} >
+                    <div className="lobby-actions" >
                         <Button type="primary" danger  onClick={leaveGame} >{host ? 'Close Lobby' : 'Leave Lobby'}</Button>
-                        <div style={{width: '8px'}}></div>
+                        <div className="spacer-h-8"></div>
                         <Button icon={<ShareAltOutlined />} onClick={copySharableAddress} >Share</Button>
                     </div>
                     { host &&
-                        (<div style={{paddingTop: '8px', width: '200px'}}>
-                            <Button style={{width: '200px'}} type="primary" onClick={beginGame}>Start Game</Button>
+                        (<div className="lobby-start">
+                            <Button className="start-button" type="primary" onClick={beginGame}>{gameType === 'hsss' ? 'Pick Story' : 'Start Game'}</Button>
                         </div>)
                     }
                 </>

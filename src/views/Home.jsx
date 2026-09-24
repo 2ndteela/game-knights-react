@@ -1,42 +1,54 @@
 import { Button } from "antd";
 import {useNavigate} from 'react-router-dom'
 import './view-styles.less'
-import React, {useState} from 'react'
+import React, {useState, useEffect} from 'react'
 import { TutorialDialog } from "../components/TutorialDialog/TutorialDialog";
+import { getFromLocalStorage, writeToLocalStorage } from "../utilities/utilities";
 
 export default function Home() {
     const navigate = useNavigate()
 
-    const [ showMessage, setShowMessage ] = useState(true)
+    // Only ever shown on a player's first visit to the site.
+    const [ showMessage, setShowMessage ] = useState(() => !getFromLocalStorage('home-message-seen'))
+
+    // Marked on mount rather than on dismissal, so coming back to the home page
+    // between games does not bring the note back.
+    useEffect(() => {
+        writeToLocalStorage('home-message-seen', true)
+    }, [])
 
     function goToGame(game) {
         navigate(`/join-game?game=${game}`)
     }
 
+    function dismissMessage() {
+        setShowMessage(false)
+    }
+
 
     return(
             <div id="home-container" className="route-container center-up">
-                <div style={{flexDirection: 'row', width: '100%', paddingBottom: '16px', justifyContent: 'flex-end'}} >
+                <div className="tutorial-row" >
                     <TutorialDialog />
                 </div>
                 <Button 
                     block
                     onClick={() => goToGame('hsss')} 
-                    style={{backgroundColor: '#323232', borderColor: '#323232'}}
+                    className="game-button"
                     size="large"
                 >He Said, She Said</Button>
-                <div style={{height: '8px'}} />
+                <div className="spacer-8" />
                 <Button 
                     block
                     onClick={() => goToGame('ai')} 
-                    style={{backgroundColor: '#323232', borderColor: '#323232'}}
+                    className="game-button"
                     size="large"
                 >Answer Is</Button>
-                <div style={{height: '8px'}} />
+                <div className="spacer-8" />
                 <Button
                     block
                     onClick={() => goToGame('wf')}
-                    style={{backgroundColor: '#323232', borderColor: '#323232'}}
+                    className="game-button"
                     size="large"
                 >Word Fight</Button>
                 <div id='home-message-container' className={`${showMessage ? '' : 'hidden-message'}`} >
@@ -53,8 +65,8 @@ export default function Home() {
                         <p>
                             Thank you again for playing my games and sharing your joy with me!
                         </p>
-                        <div style={{display: 'flex', alignItems: 'flex-end', width: '100%'}} >
-                            <Button type="primary" onClick={() => setShowMessage(false)} >Dismiss</Button>
+                        <div className="bottom-action-row" >
+                            <Button type="primary" onClick={dismissMessage} >Dismiss</Button>
                         </div>
                     </div>
                 </div>

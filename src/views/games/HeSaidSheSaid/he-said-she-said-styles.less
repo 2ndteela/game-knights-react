@@ -5,12 +5,72 @@
     height: 100%;
 }
 
+.route-container#hsss-main-wrapper .waiting-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.route-container#hsss-main-wrapper .prompt-wrapper {
+    width: 100%;
+}
+
+.route-container#hsss-main-wrapper .square-input {
+    border-radius: 0;
+}
+
 .route-container#hsss-main-wrapper #buttons-container {
     padding-top: 8px;
     width: 100%;
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+}
+
+.route-container#hsss-create-container {
+    overflow-y: auto;
+
+    .code-row {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 4px;
+    }
+
+    .create-actions {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+        padding: 16px 0;
+    }
+
+    .square-input {
+        border-radius: 0;
+    }
+
+    // antd sizes its own inputs to 100%, so what they fill is whatever this is
+    // wide: the blanket column rule leaves a plain div at content width, which
+    // sized the prompt fields to the longest placeholder.
+    .prompt-list {
+        width: 100%;
+        padding-top: 16px;
+    }
+
+    .prompt-input {
+        margin-bottom: 8px;
+    }
+
+    .ai-help-button {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .create-hint {
+        color: #8c8c8c;
+        padding-bottom: 8px;
+    }
 }
 
 #story-container.route-container .story-row {
@@ -21,9 +81,20 @@
     flex-wrap: wrap;
 } 
 
-.story-row { 
+.story-row {
     padding-top: 8px;
-    display: inline-block;
+}
+
+// A custom story has no connective text to sit in, so each answer goes under the
+// prompt it was written for. Needs the extra class to outrank the row rule above.
+#story-container.route-container .story-row.custom-row {
+    flex-direction: column;
+    padding-top: 12px;
+}
+
+#story-container.route-container .prompt-label {
+    color: #8c8c8c;
+    font-size: 14px;
 }
 
 .story-row span {
@@ -53,11 +124,14 @@
     margin-bottom: 8px;
 }
 
-#tutorial-button-container {
-    box-sizing: border-box;
-    padding-bottom: 36px;
+.route-container#story-container .story-body {
+    justify-content: space-between;
+    height: 100%;
     width: 100%;
-    display: flex;
-    flex-direction: row !important;
-    justify-content: flex-end !important;
+}
+
+// The author tag's icon renders inside a popover, which antd portals to the
+// body, so this cannot be scoped to the view's container.
+.ant-popover .author-icon {
+    color: var(--primary);
 }

@@ -5,14 +5,19 @@
 
     .main-container {
         height: 100%;
-        width: 100%; 
+        width: 100%;
         justify-content: center;
-        max-height: calc(100vh - 84px)
-
+        max-height: calc(100vh - 84px);
     }
 
-    .main-container.guessed-screen, .main-container.waiting-screen {
+    .main-container.guessed-screen,
+    .main-container.waiting-screen,
+    .main-container.guessing-screen {
         justify-content: flex-start;
+    }
+
+    .centered {
+        align-items: center;
     }
 
     #previous-guesses {
@@ -47,7 +52,7 @@
         }
 
         #top-fade {
-            top: 0px
+            top: 0px;
         }
 
         #bottom-fade {
@@ -82,5 +87,42 @@
         flex-direction: row;
         width: 100%;
         justify-content: space-between;
+    }
+
+    #score-board.narrow {
+        width: 300px;
+    }
+
+    // Both leave room for the button sitting next to them in the compact group.
+    .word-input {
+        width: calc(100% - 76px);
+    }
+
+    .guess-input {
+        width: calc(100% - 66px);
+    }
+
+    .section-heading {
+        width: 100%;
+        border-bottom: 1px solid #ffffff;
+    }
+
+    .section-heading.spaced {
+        margin-bottom: 4px;
+    }
+
+    // Banded rows, so a long player list stays readable.
+    .player-and-check.striped {
+        background-color: #232323;
+    }
+
+    .check-mark {
+        color: green;
+        padding-left: 8px;
+    }
+
+    .the-word {
+        color: var(--primary);
+        padding-left: 4px;
     }
 }

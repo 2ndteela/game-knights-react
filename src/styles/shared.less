@@ -1,0 +1,46 @@
+// Helpers used by more than one view.
+//
+// Everything is nested under #router-container on purpose: App.less lays out
+// every div in there as a flex column via an ID selector, so a bare class would
+// lose the specificity fight and silently do nothing.
+#router-container {
+    .full-width {
+        width: 100%;
+    }
+
+    .spacer-4 {
+        height: 4px;
+    }
+
+    .spacer-8 {
+        height: 8px;
+    }
+
+    .spacer-h-8 {
+        width: 8px;
+    }
+
+    .pad-bottom-4 {
+        padding-bottom: 4px;
+    }
+
+    .pad-bottom-8 {
+        padding-bottom: 8px;
+    }
+
+    .radio-row {
+        flex-direction: row;
+    }
+
+    .lobby-code {
+        color: var(--primary);
+    }
+
+    // Pins its content to the bottom, for the submit button that sits under a
+    // form field.
+    .bottom-action-row {
+        display: flex;
+        align-items: flex-end;
+        width: 100%;
+    }
+}

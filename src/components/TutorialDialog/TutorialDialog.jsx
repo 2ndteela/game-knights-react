@@ -1,36 +1,38 @@
 import { LeftCircleFilled, RightCircleFilled } from '@ant-design/icons'
 import { Button, Modal, Carousel, Select } from 'antd'
 import React, {useState, useMemo} from 'react'
-import { getAITutorial, getHSSSTutorial, getWFTutorial } from '../../ultilites/utilities'
+import { getAITutorial, getHSSSTutorial, getWFTutorial } from '../../utilities/utilities'
 import './TutorialDialog.less'
 
-export function TutorialDialog({title = 'Tutorial Dialog', steps = []}) {
+// title is intentionally not defaulted: a default would always win in
+// resolvedTitle below and hide the selected game's own title.
+export function TutorialDialog({title, steps = []}) {
     const [ showDialog, setShowDialog ] = useState(false)
     const [ selected, setSelected ] = useState(null)
-    const HSSTutorial = getHSSSTutorial()
+    const HSSSTutorial = getHSSSTutorial()
     const AITutorial = getAITutorial()
     const WFTutorial = getWFTutorial()
 
     const resolvedSteps = useMemo(() => {
         if(steps.length) return steps
 
-        if(selected === 'hsss') return HSSTutorial.steps
+        if(selected === 'hsss') return HSSSTutorial.steps
         if(selected === 'ai') return AITutorial.steps
         if(selected === 'wf') return WFTutorial.steps
 
         return []
-    }, [AITutorial, HSSTutorial, WFTutorial, selected, steps])
+    }, [AITutorial, HSSSTutorial, WFTutorial, selected, steps])
     
     const resolvedTitle = useMemo(() => {
 
         if(title) return title
 
-        if(selected === 'hsss') return HSSTutorial.title
+        if(selected === 'hsss') return HSSSTutorial.title
         if(selected === 'ai') return AITutorial.title
         if(selected === 'wf') return WFTutorial.title
 
         return 'Tutorials'
-    }, [AITutorial, HSSTutorial, WFTutorial, selected, title])
+    }, [AITutorial, HSSSTutorial, WFTutorial, selected, title])
 
     return (
         <>
@@ -41,7 +43,7 @@ export function TutorialDialog({title = 'Tutorial Dialog', steps = []}) {
                 closable
                 footer={null}
                 onCancel={() => setShowDialog(false)}
-                bodyStyle={{padding: '16px', paddingBottom: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}
+                styles={{body: {padding: '16px', paddingBottom: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}}
             >
                 <>
                     {!steps.length && (
@@ -74,7 +76,7 @@ export function TutorialDialog({title = 'Tutorial Dialog', steps = []}) {
                         nextArrow={<RightCircleFilled />}
                     >
                         {resolvedSteps.map((s, itr) => (
-                            <div className='slide-container' >
+                            <div className='slide-container' key={`step-${itr}`} >
                                 {s.img && <img src={s.img} alt={`step-${itr+1}`} />}
                                 <p>{s.text}</p>
                             </div>

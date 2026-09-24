@@ -1,10 +1,12 @@
 import React, {useState, useEffect, useMemo} from 'react'
 import './he-said-she-said-styles.less'
-import { getHsssGameData } from '../../../ultilites/services'
-import { cleanStoredData, getFromLocalStorage, getStoredGameData, writeToLocalStorage } from '../../../ultilites/utilities'
+import { getHsssGameData } from '../../../utilities/services'
+import { getFromLocalStorage, getStoredGameData, writeToLocalStorage } from '../../../utilities/utilities'
+import { useGoHome } from '../../../hooks/useGoHome'
 import { Button, Popconfirm, notification } from 'antd'
 import { CaretLeftOutlined, CaretRightOutlined, UserOutlined } from '@ant-design/icons'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { defaultPrompts } from './usePrompts'
 
 
 const startingLines = [
@@ -22,10 +24,14 @@ const startingLines = [
 const errorString = 'Error Finding Game'
 
 export default function HsssResults() {
-    const navigate = useNavigate()
+    const goHome = useGoHome()
     const {playerId} = getStoredGameData()
-    const intro = startingLines[Math.floor(Math.random()) * startingLines.length]
-    const haveSeenNotification = getFromLocalStorage('hsss-notified')
+    // Memoized so the intro stays put: picking during render would reshuffle it
+    // on every state change.
+    const intro = useMemo(
+        () => startingLines[Math.floor(Math.random() * startingLines.length)],
+        []
+    )
     const [search] = useSearchParams()
     const queryId = search.get('gameCode')
 
@@ -52,15 +58,31 @@ export default function HsssResults() {
 
         f()
 
-        if(!haveSeenNotification) {
+        // Read and written inside the effect, and written before the
+        // notification opens: StrictMode invokes this effect twice in
+        // development, and a flag captured during render would still be unset
+        // on the second run.
+        if(!getFromLocalStorage('hsss-notified')) {
+            writeToLocalStorage('hsss-notified', true)
+
             notification.open({
-                message: 'Author Tags',
-                description: 'Click on any of the highlighted words to see who the author was! (Also ignore that little "X" and click on this bubble to never see this again.)',
-                onClick: () => writeToLocalStorage('hsss-notified', true)
+                key: 'hsss-author-tags',
+                title: 'Author Tags',
+                description: 'Click on any of the highlighted words to see who the author was!'
             })
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    // A host who wrote their own prompts stored them on the game. The standard
+    // story is stitched together with connective text that only fits those ten
+    // prompts, so a custom one is shown as each prompt with its answer under it.
+    const customPrompts = useMemo(() => {
+        const stored = storyData?.prompts
+        return Array.isArray(stored) && stored.length ? stored : null
+    }, [storyData])
+
+    const promptCount = customPrompts ? customPrompts.length : defaultPrompts.length
 
     const fixedStoryArray = useMemo(() => {
         if(storyData === errorString && !dataIncomplete)
@@ -70,7 +92,7 @@ export default function HsssResults() {
         const arr = []
 
         keys.forEach((k) => {
-            if(dataIncomplete && storyData.players[k].responses.length === 10)
+            if(dataIncomplete && storyData.players[k].responses?.length === promptCount)
                 arr.push(storyData.players[k])
             else if(!dataIncomplete)
                 arr.push(storyData.players[k])
@@ -81,7 +103,7 @@ export default function HsssResults() {
             return arr
         else return []
         
-    }, [dataIncomplete, storyData])
+    }, [dataIncomplete, promptCount, storyData])
 
 
     const story = useMemo(() => {
@@ -96,7 +118,7 @@ export default function HsssResults() {
             let idx = startIdx || 0
             const playerCount = fixedStoryArray.length
             const story = []
-            for(let i = 0; i < 10; i++) {
+            for(let i = 0; i < promptCount; i++) {
                 const next = fixedStoryArray[idx]
 
                 const line = next.responses[i].replace("#", '')
@@ -114,7 +136,7 @@ export default function HsssResults() {
             return []
         }
 
-    }, [startIdx, fixedStoryArray])
+    }, [startIdx, fixedStoryArray, promptCount])
 
     function addOne() {
         if(startIdx === fixedStoryArray.length - 1) setStartIdx(0)
@@ -130,18 +152,13 @@ export default function HsssResults() {
         return string ? string : 'REDACTED'
     }
 
-    function goHome() {
-        cleanStoredData()
-        navigate('/')
-    }
-
     function makePopConfirm(idx, padRight = true, padLeft = true) {
 
         const className = `${padRight ? '' :' no-right'} ${padLeft ? '' : 'no-left'}`
 
         if(story[idx])
             return (
-                <Popconfirm title={story[idx].author} showCancel={false} icon={<UserOutlined style={{color: 'var(--primary)'}} />}> 
+                <Popconfirm title={story[idx].author} showCancel={false} icon={<UserOutlined className="author-icon" />}> 
                     <span className={className}>{story[idx].text}</span>
                 </Popconfirm>
             )
@@ -157,9 +174,15 @@ export default function HsssResults() {
                         <h2>Story #{startIdx + 1}</h2>
                         <Button icon={<CaretRightOutlined />} onClick={addOne} />
                     </div>
-                    <div style={{justifyContent: 'space-between', height: '100%', width: '100%'}}>
+                    <div className="story-body">
                         <div>
                             <h3>{intro}...</h3>
+                            {customPrompts ? customPrompts.map((prompt, idx) => (
+                                <div className='story-row custom-row' key={idx}>
+                                    <div className='prompt-label'>{prompt}</div>
+                                    <div>{makePopConfirm(idx, false, false)}</div>
+                                </div>
+                            )) : (<>
                             <div className='story-row'> {makePopConfirm(0, true, false)} and {makePopConfirm(1)}</div>
                             <div className='story-row'>Were at  {makePopConfirm(2, false, true)},  {makePopConfirm(3, true, true)}</div>
                             <div className='story-row'>When {makePopConfirm(0)} says, "{makePopConfirm(4, false, false)}"</div>
@@ -168,10 +191,11 @@ export default function HsssResults() {
                             <div className='story-row'>Then {makePopConfirm(1)} says "{makePopConfirm(7, false, false)}"</div>
                             <div className='story-row'>And so we see that {makePopConfirm(8)}</div>
                             <div className='story-row'>#{makePopConfirm(9, false, false)}</div>
+                            </>)}
                         </div>
                         <Button 
                             type='primary' 
-                            style={{width: '100%'}} 
+                            className="full-width" 
                             onClick={goHome} 
                             size="large" 
                         >Return to home</Button>
@@ -181,15 +205,15 @@ export default function HsssResults() {
             {story.length === 0 && <div className='route-container' >
                 <h2>Oops</h2>
                 <p>
-                    It looks like one or more of your players did not log any answers, so the game could not be completed. 
-                    We can try clean the data, but some players responses may be omitted completely.
+                    It looks like one or more of your players did not log any answers, so the game could not be completed.
+                    We can try to clean the data, but some players' responses may be omitted completely.
                 </p>
                 {dataIncomplete ? <h3>Data could not be reconciled :/</h3> : <Button onClick={() => setDataIncomplete(true)} >Attempt to fix data</Button>}
             </div>}
             {story === errorString && (
                 <div className='route-container' >
                     <h3>Error retrieving story</h3>
-                    <p>Look like the story you were looking for doesn't exists or has been archived. Sorry about that :/</p>
+                    <p>Looks like the story you were looking for doesn't exist or has been archived. Sorry about that :/</p>
                 </div>
             )}
         </>
